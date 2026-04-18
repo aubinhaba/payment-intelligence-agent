@@ -1,0 +1,91 @@
+# ---- Java / Maven ----
+target/
+*.class
+*.jar
+!/**/src/**/*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+dependency-reduced-pom.xml
+
+# ---- IDE ----
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+!.vscode/extensions.json
+.project
+.classpath
+.settings/
+.factorypath
+*.swp
+*.swo
+
+# ---- Node / Angular ----
+node_modules/
+dist/
+.angular/
+.nx/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Terraform ----
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform/**/terraform.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+docs/
+CLAUDE.md
+AGENTS.md
+.claude/
+
+# ---- Docker ----
+.docker/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---- Env & secrets ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+
+# ---- Logs ----
+logs/
+*.log
+
+# ---- Local tooling ----
+.claude/
+.aider*
+
+# ---- Test output ----
+*.lcov
+jacoco.exec
+surefire-reports/
+failsafe-reports/
+Makefile
+CHANGELOG.md
+config/
+settings-local.xml
+
