@@ -10,8 +10,7 @@
 
   <artifactId>pia-infrastructure</artifactId>
   <name>Payment Intelligence Agent :: Infrastructure</name>
-  <description>Adapters: DynamoDB, SQS, S3, SSM, Claude API, CloudWatch metrics
-        and structured logging.</description>
+  <description>Adapters: DynamoDB, SQS, S3, SSM, CloudWatch metrics and structured logging.</description>
 
   <dependencies>
     <dependency>
@@ -19,8 +18,53 @@
       <artifactId>pia-application</artifactId>
     </dependency>
 
-    <!-- Adapter dependencies (AWS SDK, Spring starters, WebClient, Jackson, Resilience4j)
-             are added when the first adapter lands. -->
+    <!-- Spring Cloud AWS starters (bring in auto-configuration + AWS SDK clients) -->
+    <dependency>
+      <groupId>io.awspring.cloud</groupId>
+      <artifactId>spring-cloud-aws-starter-dynamodb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.awspring.cloud</groupId>
+      <artifactId>spring-cloud-aws-starter-sqs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.awspring.cloud</groupId>
+      <artifactId>spring-cloud-aws-starter-s3</artifactId>
+    </dependency>
+
+    <!-- AWS SDK v2 SSM (raw client for SsmSecretsLoader) -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>ssm</artifactId>
+    </dependency>
+
+    <!-- Bean Validation (DTO @NotNull, @Valid on SQS listener) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- Micrometer (MeterRegistry types — instance provided by pia-bootstrap actuator) -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
+    <!-- JSON structured logging -->
+    <dependency>
+      <groupId>net.logstash.logback</groupId>
+      <artifactId>logstash-logback-encoder</artifactId>
+    </dependency>
+
+    <!-- Jackson (outbox payload serialisation) -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
 
     <!-- Tests -->
     <dependency>

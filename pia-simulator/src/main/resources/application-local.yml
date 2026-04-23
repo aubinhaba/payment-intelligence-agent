@@ -1,0 +1,14 @@
+spring:
+  cloud:
+    aws:
+      region:
+        static: eu-west-1
+      credentials:
+        access-key: test
+        secret-key: test
+      sqs:
+        endpoint: http://localhost:4566
+
+logging:
+  level:
+    com.aubin.pia.simulator: DEBUG

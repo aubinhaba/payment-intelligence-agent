@@ -27,6 +27,16 @@ public class Report extends AggregateRoot {
         return new Report(id, transactionId, content, Instant.now());
     }
 
+    /** Rebuilds a report from persistence without raising domain events. */
+    public static Report reconstitute(
+            ReportId id, TransactionId transactionId, ReportContent content, Instant generatedAt) {
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(transactionId, "transactionId must not be null");
+        Objects.requireNonNull(content, "content must not be null");
+        Objects.requireNonNull(generatedAt, "generatedAt must not be null");
+        return new Report(id, transactionId, content, generatedAt);
+    }
+
     public ReportId id() {
         return id;
     }

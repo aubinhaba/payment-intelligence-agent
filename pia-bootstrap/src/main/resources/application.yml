@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: payment-intelligence-agent
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      cloudwatch:
+        enabled: false   # enabled in prod profile only
+
+pia:
+  dynamodb:
+    table-name: pia-table
+  sqs:
+    payment-events-queue: payment-events-queue
+    payment-events-dlq: payment-events-dlq
+  s3:
+    reports-bucket: pia-reports
+  ssm:
+    claude-api-key-path: /pia/claude/api-key
+  outbox:
+    poll-interval-ms: 5000
+  claude:
+    api-key: ${pia.claude.api-key:placeholder}   # overridden at runtime by SsmSecretsLoader

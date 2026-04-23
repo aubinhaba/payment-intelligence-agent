@@ -1,0 +1,19 @@
+spring:
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:eu-west-1}
+      # Credentials resolved from ECS task role (no explicit config needed)
+
+management:
+  metrics:
+    export:
+      cloudwatch:
+        enabled: true
+        namespace: PIA
+        step: 1m
+
+logging:
+  level:
+    root: WARN
+    com.aubin.pia: INFO

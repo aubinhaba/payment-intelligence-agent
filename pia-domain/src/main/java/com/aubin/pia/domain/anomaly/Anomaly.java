@@ -49,6 +49,26 @@ public class Anomaly extends AggregateRoot {
         return anomaly;
     }
 
+    /** Rebuilds an anomaly from persistence without raising domain events. */
+    public static Anomaly reconstitute(
+            AnomalyId id,
+            TransactionId transactionId,
+            AnomalyType type,
+            Severity severity,
+            String description,
+            Instant detectedAt) {
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(transactionId, "transactionId must not be null");
+        Objects.requireNonNull(type, "type must not be null");
+        Objects.requireNonNull(severity, "severity must not be null");
+        Objects.requireNonNull(description, "description must not be null");
+        Objects.requireNonNull(detectedAt, "detectedAt must not be null");
+        if (description.isBlank()) {
+            throw new IllegalArgumentException("description must not be blank");
+        }
+        return new Anomaly(id, transactionId, type, severity, description, detectedAt);
+    }
+
     public AnomalyId id() {
         return id;
     }

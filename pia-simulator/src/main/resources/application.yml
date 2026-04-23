@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: pia-simulator
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+pia:
+  simulator:
+    queue-name: payment-events-queue
+    interval-ms: 1000
