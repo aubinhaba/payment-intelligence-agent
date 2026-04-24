@@ -34,3 +34,18 @@ pia:
     poll-interval-ms: 5000
   claude:
     api-key: ${pia.claude.api-key:placeholder}   # overridden at runtime by SsmSecretsLoader
+  detection:
+    amount:
+      high-threshold: 5000.00
+      critical-threshold: 10000.00
+    velocity:
+      window-hours: 1
+      high-count: 5
+      critical-count: 10
+    card-testing:
+      window-hours: 1
+      min-count: 3
+      high-count: 5
+      max-micro-amount: 2.00
+    geo:
+      high-risk-countries: AE,MT,SG,HK,RU,NG

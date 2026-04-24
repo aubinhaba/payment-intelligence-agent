@@ -87,5 +87,6 @@ failsafe-reports/
 Makefile
 CHANGELOG.md
 config/
+!**/src/**/config/
 settings-local.xml
 
