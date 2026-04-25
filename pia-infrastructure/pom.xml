@@ -66,10 +66,28 @@
       <artifactId>jackson-datatype-jsr310</artifactId>
     </dependency>
 
+    <!-- WebClient for Claude HTTP client (coexists safely with Spring MVC) -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webflux</artifactId>
+    </dependency>
+    <!-- Reactor Netty — required runtime for WebClient -->
+    <dependency>
+      <groupId>io.projectreactor.netty</groupId>
+      <artifactId>reactor-netty-http</artifactId>
+    </dependency>
+
     <!-- Tests -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- MockWebServer for ClaudeApiClient HTTP tests -->
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>mockwebserver</artifactId>
+      <version>4.12.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
