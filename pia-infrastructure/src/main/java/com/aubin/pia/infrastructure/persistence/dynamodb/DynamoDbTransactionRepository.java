@@ -78,6 +78,15 @@ public class DynamoDbTransactionRepository implements TransactionRepository {
     }
 
     @Override
+    public List<Transaction> findRecent(int limit) {
+        return table.scan(ScanEnhancedRequest.builder().limit(limit).build()).stream()
+                .flatMap(page -> page.items().stream())
+                .limit(limit)
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Transaction> findByMerchantId(String merchantId, int windowHours) {
         Instant cutoff = Instant.now().minus(windowHours, ChronoUnit.HOURS);
         Expression filter =

@@ -23,8 +23,12 @@ import com.aubin.pia.application.port.out.ReportStorage;
 import com.aubin.pia.application.port.out.TransactionRepository;
 import com.aubin.pia.application.usecase.AnalyzeWithAgentUseCase;
 import com.aubin.pia.application.usecase.DetectAnomaliesUseCase;
+import com.aubin.pia.application.usecase.FindAnomaliesUseCase;
+import com.aubin.pia.application.usecase.FindReportsUseCase;
+import com.aubin.pia.application.usecase.FindTransactionsUseCase;
 import com.aubin.pia.application.usecase.GenerateReportUseCase;
 import com.aubin.pia.application.usecase.IngestTransactionUseCase;
+import com.aubin.pia.application.usecase.MetricsSummaryUseCase;
 
 /**
  * Wires application use cases and detection policies with their driven port implementations.
@@ -122,5 +126,30 @@ public class UseCaseConfig {
             MetricsPublisher metricsPublisher) {
         return new AnalyzeWithAgentUseCase(
                 transactionRepository, anomalyRepository, agentPort, metricsPublisher);
+    }
+
+    @Bean
+    public FindTransactionsUseCase findTransactionsUseCase(
+            TransactionRepository transactionRepository) {
+        return new FindTransactionsUseCase(transactionRepository);
+    }
+
+    @Bean
+    public FindAnomaliesUseCase findAnomaliesUseCase(AnomalyRepository anomalyRepository) {
+        return new FindAnomaliesUseCase(anomalyRepository);
+    }
+
+    @Bean
+    public FindReportsUseCase findReportsUseCase(ReportRepository reportRepository) {
+        return new FindReportsUseCase(reportRepository);
+    }
+
+    @Bean
+    public MetricsSummaryUseCase metricsSummaryUseCase(
+            TransactionRepository transactionRepository,
+            AnomalyRepository anomalyRepository,
+            ReportRepository reportRepository) {
+        return new MetricsSummaryUseCase(
+                transactionRepository, anomalyRepository, reportRepository);
     }
 }

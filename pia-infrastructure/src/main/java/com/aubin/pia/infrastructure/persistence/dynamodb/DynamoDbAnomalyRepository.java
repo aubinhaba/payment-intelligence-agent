@@ -22,6 +22,7 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 
 @Repository
 public class DynamoDbAnomalyRepository implements AnomalyRepository {
@@ -54,6 +55,15 @@ public class DynamoDbAnomalyRepository implements AnomalyRepository {
                                 .build());
         return table.query(condition).stream()
                 .flatMap(page -> page.items().stream())
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Anomaly> findRecent(int limit) {
+        return table.scan(ScanEnhancedRequest.builder().limit(limit).build()).stream()
+                .flatMap(page -> page.items().stream())
+                .limit(limit)
                 .map(this::toDomain)
                 .collect(Collectors.toList());
     }
