@@ -12,4 +12,6 @@ public interface TransactionRepository {
     Optional<Transaction> findById(TransactionId id);
 
     List<Transaction> findByCardReference(String cardHash, int windowHours);
+
+    List<Transaction> findByMerchantId(String merchantId, int windowHours);
 }

@@ -14,12 +14,14 @@ import com.aubin.pia.application.policy.AmountDetectionPolicy;
 import com.aubin.pia.application.policy.CardTestingDetectionPolicy;
 import com.aubin.pia.application.policy.GeoDetectionPolicy;
 import com.aubin.pia.application.policy.VelocityDetectionPolicy;
+import com.aubin.pia.application.port.out.AgentPort;
 import com.aubin.pia.application.port.out.AnomalyRepository;
 import com.aubin.pia.application.port.out.EventPublisher;
 import com.aubin.pia.application.port.out.MetricsPublisher;
 import com.aubin.pia.application.port.out.ReportRepository;
 import com.aubin.pia.application.port.out.ReportStorage;
 import com.aubin.pia.application.port.out.TransactionRepository;
+import com.aubin.pia.application.usecase.AnalyzeWithAgentUseCase;
 import com.aubin.pia.application.usecase.DetectAnomaliesUseCase;
 import com.aubin.pia.application.usecase.GenerateReportUseCase;
 import com.aubin.pia.application.usecase.IngestTransactionUseCase;
@@ -110,5 +112,15 @@ public class UseCaseConfig {
             ReportStorage reportStorage,
             MetricsPublisher metricsPublisher) {
         return new GenerateReportUseCase(reportRepository, reportStorage, metricsPublisher);
+    }
+
+    @Bean
+    public AnalyzeWithAgentUseCase analyzeWithAgentUseCase(
+            TransactionRepository transactionRepository,
+            AnomalyRepository anomalyRepository,
+            AgentPort agentPort,
+            MetricsPublisher metricsPublisher) {
+        return new AnalyzeWithAgentUseCase(
+                transactionRepository, anomalyRepository, agentPort, metricsPublisher);
     }
 }

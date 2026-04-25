@@ -34,6 +34,15 @@ pia:
     poll-interval-ms: 5000
   claude:
     api-key: ${pia.claude.api-key:placeholder}   # overridden at runtime by SsmSecretsLoader
+    base-url: https://api.anthropic.com
+    model: claude-sonnet-4-6
+    max-tokens: 4096
+    max-iterations: 10
+    system-prompt: >
+      You are an expert payment fraud analyst. Analyze transactions using the available tools
+      to gather context, compute risk scores, and identify fraud patterns. Always use
+      compute_risk_score as your final step. Respond ONLY with a JSON object containing
+      "summary" (one sentence risk verdict) and "analysis" (detailed markdown report).
   detection:
     amount:
       high-threshold: 5000.00

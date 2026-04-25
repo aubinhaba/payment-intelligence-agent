@@ -23,10 +23,13 @@ import com.aubin.pia.infrastructure.persistence.dynamodb.entity.TransactionEntit
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @Repository
 public class DynamoDbTransactionRepository implements TransactionRepository {
@@ -69,6 +72,23 @@ public class DynamoDbTransactionRepository implements TransactionRepository {
         return gsi1
                 .query(QueryEnhancedRequest.builder().queryConditional(condition).build())
                 .stream()
+                .flatMap(page -> page.items().stream())
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Transaction> findByMerchantId(String merchantId, int windowHours) {
+        Instant cutoff = Instant.now().minus(windowHours, ChronoUnit.HOURS);
+        Expression filter =
+                Expression.builder()
+                        .expression("merchantId = :merchantId AND occurredAt >= :cutoff")
+                        .expressionValues(
+                                java.util.Map.of(
+                                        ":merchantId", AttributeValue.fromS(merchantId),
+                                        ":cutoff", AttributeValue.fromS(cutoff.toString())))
+                        .build();
+        return table.scan(ScanEnhancedRequest.builder().filterExpression(filter).build()).stream()
                 .flatMap(page -> page.items().stream())
                 .map(this::toDomain)
                 .collect(Collectors.toList());

@@ -47,10 +47,7 @@ class ToolCallingLoopTest {
         when(tool.name()).thenReturn("get_transaction_history");
         loop =
                 new ToolCallingLoop(
-                        claudeApiClient,
-                        Map.of("get_transaction_history", tool),
-                        MAX_ITERATIONS,
-                        mapper);
+                        claudeApiClient, Map.of(tool.name(), tool), MAX_ITERATIONS, mapper);
     }
 
     @Test
