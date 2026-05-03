@@ -12,4 +12,6 @@ public interface AnomalyRepository {
     List<Anomaly> findByTransactionId(TransactionId transactionId);
 
     List<Anomaly> findSimilar(AnomalyType type, int limit);
+
+    List<Anomaly> findRecent(int limit);
 }

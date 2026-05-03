@@ -20,7 +20,17 @@ management:
       cloudwatch:
         enabled: false   # enabled in prod profile only
 
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: alpha
+
 pia:
+  api:
+    cors:
+      allowed-origins: http://localhost:4200
   dynamodb:
     table-name: pia-table
   sqs:
