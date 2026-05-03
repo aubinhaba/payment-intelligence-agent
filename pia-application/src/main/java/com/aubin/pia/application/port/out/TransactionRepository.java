@@ -14,4 +14,6 @@ public interface TransactionRepository {
     List<Transaction> findByCardReference(String cardHash, int windowHours);
 
     List<Transaction> findByMerchantId(String merchantId, int windowHours);
+
+    List<Transaction> findRecent(int limit);
 }

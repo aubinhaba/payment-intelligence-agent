@@ -1,7 +1,9 @@
 package com.aubin.pia.infrastructure.persistence.dynamodb;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
@@ -17,6 +19,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 
 @Repository
 public class DynamoDbReportRepository implements ReportRepository {
@@ -36,6 +39,15 @@ public class DynamoDbReportRepository implements ReportRepository {
     @Override
     public void save(Report report) {
         table.putItem(toEntity(report));
+    }
+
+    @Override
+    public List<Report> findRecent(int limit) {
+        return table.scan(ScanEnhancedRequest.builder().limit(limit).build()).stream()
+                .flatMap(page -> page.items().stream())
+                .limit(limit)
+                .map(this::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
