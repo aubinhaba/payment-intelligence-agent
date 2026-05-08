@@ -1,0 +1,228 @@
+/* ── Design tokens ────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --color-bg:        #050814;
+  --color-surface-1: #090e1c;
+  --color-surface-2: #0e1528;
+  --color-surface-3: #141c32;
+
+  /* Borders */
+  --color-border:       rgba(99, 102, 241, 0.1);
+  --color-border-hover: rgba(99, 102, 241, 0.35);
+  --color-border-glow:  rgba(99, 102, 241, 0.6);
+
+  /* Accent gradient: indigo → cyan */
+  --color-accent:       #6366f1;
+  --color-accent-2:     #06b6d4;
+  --color-accent-glow:  rgba(99, 102, 241, 0.18);
+  --gradient-accent:    linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+  --gradient-accent-45: linear-gradient(45deg, #6366f1 0%, #06b6d4 100%);
+
+  /* Text */
+  --color-text-primary:   #eef2ff;
+  --color-text-secondary: #8896b3;
+  --color-text-muted:     #3d4d6b;
+
+  /* Semantic */
+  --color-success:  #10b981;
+  --color-warning:  #f59e0b;
+  --color-danger:   #f43f5e;
+  --color-info:     #06b6d4;
+
+  /* Severity */
+  --color-sev-low:      #10b981;
+  --color-sev-medium:   #f59e0b;
+  --color-sev-high:     #f43f5e;
+  --color-sev-critical: #a855f7;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  /* Transitions */
+  --transition-fast: 140ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Reset ────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* Subtle grid texture */
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.08) 0%, transparent 70%),
+    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-3);
+  border-radius: 3px;
+  &:hover { background: var(--color-accent); }
+}
+
+/* ── Typography ───────────────────────────────────────────────────── */
+h1 { font-size: 1.625rem; font-weight: 700; letter-spacing: -0.03em; }
+h2 { font-size: 1.1rem;   font-weight: 600; letter-spacing: -0.02em; }
+h3 { font-size: 0.9rem;   font-weight: 600; }
+code, pre { font-family: var(--font-mono); }
+
+/* ── Layout ───────────────────────────────────────────────────────── */
+.page-container {
+  padding: var(--space-8) var(--space-8) var(--space-12);
+  max-width: 1400px;
+}
+
+.page-header {
+  margin-bottom: var(--space-8);
+
+  h1 {
+    color: #eef2ff;
+    background: linear-gradient(135deg, #c7d2fe 0%, #a5f3fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-block;
+  }
+
+  p {
+    margin-top: var(--space-2);
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+  }
+}
+
+/* ── Glass card ───────────────────────────────────────────────────── */
+.card {
+  background: rgba(9, 14, 28, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  position: relative;
+
+  /* Subtle top-edge glow */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-md);
+    padding: 1px;
+    background: var(--gradient-accent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    pointer-events: none;
+  }
+
+  &:hover::before { opacity: 0.4; }
+}
+
+/* ── Tables ───────────────────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+
+    &:first-child { color: var(--color-text-primary); font-weight: 500; }
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr {
+    transition: background var(--transition-fast);
+    &:hover td { background: rgba(99, 102, 241, 0.04); }
+  }
+}
+
+/* ── Mono ─────────────────────────────────────────────────────────── */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.775rem;
+}
+
+/* ── Loading ──────────────────────────────────────────────────────── */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-12);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+
+  &::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+}
+
+/* ── Empty state ──────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: var(--space-12);
+  color: var(--color-text-muted);
+
+  span { font-size: 2rem; opacity: 0.4; display: block; margin-bottom: var(--space-3); }
+  p { font-size: 0.875rem; }
+}
+
+/* ── Animations ───────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-container { animation: fadeIn 0.25s ease both; }
