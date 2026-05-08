@@ -8,6 +8,7 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import com.aubin.pia.application.port.in.IngestTransactionCommand;
+import com.aubin.pia.application.port.out.MetricsPublisher;
 import com.aubin.pia.application.port.out.TransactionRepository;
 import com.aubin.pia.application.usecase.IngestTransactionUseCase;
 import com.aubin.pia.domain.transaction.Transaction;
@@ -23,12 +24,15 @@ public class SqsPaymentEventListener {
 
     private final IngestTransactionUseCase ingestTransactionUseCase;
     private final TransactionRepository transactionRepository;
+    private final MetricsPublisher metricsPublisher;
 
     public SqsPaymentEventListener(
             IngestTransactionUseCase ingestTransactionUseCase,
-            TransactionRepository transactionRepository) {
+            TransactionRepository transactionRepository,
+            MetricsPublisher metricsPublisher) {
         this.ingestTransactionUseCase = ingestTransactionUseCase;
         this.transactionRepository = transactionRepository;
+        this.metricsPublisher = metricsPublisher;
     }
 
     @SqsListener("${pia.sqs.payment-events-queue}")
@@ -37,6 +41,7 @@ public class SqsPaymentEventListener {
         MDC.put("transactionId", event.transaction().id());
         MDC.put("eventId", event.eventId());
         try {
+            metricsPublisher.incrementSqsMessagesConsumed();
             processEvent(event);
         } finally {
             MDC.clear();

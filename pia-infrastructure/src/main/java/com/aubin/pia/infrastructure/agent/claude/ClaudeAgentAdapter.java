@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.aubin.pia.application.port.out.AgentPort;
+import com.aubin.pia.application.port.out.MetricsPublisher;
 import com.aubin.pia.domain.anomaly.Anomaly;
 import com.aubin.pia.domain.report.ReportContent;
 import com.aubin.pia.domain.transaction.Transaction;
@@ -20,13 +21,15 @@ public class ClaudeAgentAdapter implements AgentPort {
     private final String model;
     private final int maxTokens;
     private final String systemPrompt;
+    private final MetricsPublisher metricsPublisher;
 
     public ClaudeAgentAdapter(
             ToolCallingLoop loop,
             Map<String, AgentTool> tools,
             String model,
             int maxTokens,
-            String systemPrompt) {
+            String systemPrompt,
+            MetricsPublisher metricsPublisher) {
         this.loop = loop;
         this.tools = tools;
         this.toolDefinitions =
@@ -36,13 +39,19 @@ public class ClaudeAgentAdapter implements AgentPort {
         this.model = model;
         this.maxTokens = maxTokens;
         this.systemPrompt = systemPrompt;
+        this.metricsPublisher = metricsPublisher;
     }
 
     @Override
     public ReportContent analyze(Transaction transaction, List<Anomaly> anomalies) {
         String userMessage = buildUserMessage(transaction, anomalies);
         List<MessageDto> messages = List.of(new MessageDto("user", userMessage));
-        return loop.run(model, maxTokens, systemPrompt, messages, toolDefinitions);
+        long start = System.currentTimeMillis();
+        try {
+            return loop.run(model, maxTokens, systemPrompt, messages, toolDefinitions);
+        } finally {
+            metricsPublisher.recordAgentLatencyMillis(System.currentTimeMillis() - start);
+        }
     }
 
     private String buildUserMessage(Transaction transaction, List<Anomaly> anomalies) {
