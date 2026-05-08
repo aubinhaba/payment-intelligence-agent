@@ -14,11 +14,23 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
   metrics:
     export:
       cloudwatch:
-        enabled: false   # enabled in prod profile only
+        enabled: false          # enabled via prod profile
+        namespace: PIA
+        step: PT1M              # push every minute
+    tags:
+      service: ${spring.application.name}
+      env: ${spring.profiles.active:local}
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0          # 100% in dev; reduce in prod
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces   # overridden in prod → ADOT sidecar
 
 springdoc:
   api-docs:

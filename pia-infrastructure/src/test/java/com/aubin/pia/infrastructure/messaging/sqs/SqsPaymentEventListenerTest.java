@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.aubin.pia.application.port.out.MetricsPublisher;
 import com.aubin.pia.application.port.out.TransactionRepository;
 import com.aubin.pia.application.usecase.IngestTransactionUseCase;
 import com.aubin.pia.domain.transaction.Transaction;
@@ -30,13 +31,16 @@ class SqsPaymentEventListenerTest {
 
     @Mock private IngestTransactionUseCase ingestTransactionUseCase;
     @Mock private TransactionRepository transactionRepository;
+    @Mock private MetricsPublisher metricsPublisher;
     @Mock private Transaction existingTransaction;
 
     private SqsPaymentEventListener listener;
 
     @BeforeEach
     void setUp() {
-        listener = new SqsPaymentEventListener(ingestTransactionUseCase, transactionRepository);
+        listener =
+                new SqsPaymentEventListener(
+                        ingestTransactionUseCase, transactionRepository, metricsPublisher);
     }
 
     @Test

@@ -44,4 +44,15 @@ public class MicrometerMetricsPublisher implements MetricsPublisher {
     public void recordAgentLatencyMillis(long millis) {
         registry.timer("pia.agent.claude.latency").record(millis, TimeUnit.MILLISECONDS);
     }
+
+    @Override
+    public void recordAgentTokensUsed(int inputTokens, int outputTokens) {
+        registry.counter("pia.agent.claude.tokens.used", "type", "input").increment(inputTokens);
+        registry.counter("pia.agent.claude.tokens.used", "type", "output").increment(outputTokens);
+    }
+
+    @Override
+    public void incrementSqsMessagesConsumed() {
+        registry.counter("pia.sqs.messages.consumed").increment();
+    }
 }

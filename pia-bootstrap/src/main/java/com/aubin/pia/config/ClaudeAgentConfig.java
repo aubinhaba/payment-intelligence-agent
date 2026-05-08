@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.aubin.pia.application.port.out.AgentPort;
 import com.aubin.pia.application.port.out.AnomalyRepository;
+import com.aubin.pia.application.port.out.MetricsPublisher;
 import com.aubin.pia.application.port.out.TransactionRepository;
 import com.aubin.pia.infrastructure.agent.claude.ClaudeAgentAdapter;
 import com.aubin.pia.infrastructure.agent.claude.ClaudeApiClient;
@@ -90,8 +91,10 @@ public class ClaudeAgentConfig {
             ClaudeApiClient claudeApiClient,
             Map<String, AgentTool> agentToolRegistry,
             @Value("${pia.claude.max-iterations}") int maxIterations,
-            ObjectMapper objectMapper) {
-        return new ToolCallingLoop(claudeApiClient, agentToolRegistry, maxIterations, objectMapper);
+            ObjectMapper objectMapper,
+            MetricsPublisher metricsPublisher) {
+        return new ToolCallingLoop(
+                claudeApiClient, agentToolRegistry, maxIterations, objectMapper, metricsPublisher);
     }
 
     @Bean
@@ -100,8 +103,10 @@ public class ClaudeAgentConfig {
             Map<String, AgentTool> agentToolRegistry,
             @Value("${pia.claude.model}") String model,
             @Value("${pia.claude.max-tokens}") int maxTokens,
-            @Value("${pia.claude.system-prompt}") String systemPrompt) {
+            @Value("${pia.claude.system-prompt}") String systemPrompt,
+            MetricsPublisher metricsPublisher) {
         return new ClaudeAgentAdapter(
-                toolCallingLoop, agentToolRegistry, model, maxTokens, systemPrompt);
+                toolCallingLoop, agentToolRegistry, model, maxTokens, systemPrompt,
+                metricsPublisher);
     }
 }

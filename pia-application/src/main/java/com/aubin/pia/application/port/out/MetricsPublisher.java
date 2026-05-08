@@ -11,4 +11,8 @@ public interface MetricsPublisher {
     void incrementReportsGenerated();
 
     void recordAgentLatencyMillis(long millis);
+
+    void recordAgentTokensUsed(int inputTokens, int outputTokens);
+
+    void incrementSqsMessagesConsumed();
 }

@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.aubin.pia.application.port.out.MetricsPublisher;
 import com.aubin.pia.domain.report.ReportContent;
 import com.aubin.pia.infrastructure.agent.claude.dto.ClaudeRequest;
 import com.aubin.pia.infrastructure.agent.claude.dto.ClaudeResponse;
@@ -32,6 +33,7 @@ class ToolCallingLoopTest {
 
     @Mock ClaudeApiClient claudeApiClient;
     @Mock AgentTool tool;
+    @Mock MetricsPublisher metricsPublisher;
 
     private ToolCallingLoop loop;
     private ObjectMapper mapper;
@@ -47,7 +49,11 @@ class ToolCallingLoopTest {
         when(tool.name()).thenReturn("get_transaction_history");
         loop =
                 new ToolCallingLoop(
-                        claudeApiClient, Map.of(tool.name(), tool), MAX_ITERATIONS, mapper);
+                        claudeApiClient,
+                        Map.of(tool.name(), tool),
+                        MAX_ITERATIONS,
+                        mapper,
+                        metricsPublisher);
     }
 
     @Test

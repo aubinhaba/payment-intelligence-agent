@@ -7,12 +7,14 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.aubin.pia.application.port.out.MetricsPublisher;
 import com.aubin.pia.domain.report.ReportContent;
 import com.aubin.pia.infrastructure.agent.claude.dto.ClaudeRequest;
 import com.aubin.pia.infrastructure.agent.claude.dto.ClaudeResponse;
 import com.aubin.pia.infrastructure.agent.claude.dto.ContentBlock;
 import com.aubin.pia.infrastructure.agent.claude.dto.MessageDto;
 import com.aubin.pia.infrastructure.agent.claude.dto.ToolDefinition;
+import com.aubin.pia.infrastructure.agent.claude.dto.UsageDto;
 import com.aubin.pia.infrastructure.agent.claude.tools.AgentTool;
 
 public class ToolCallingLoop {
@@ -21,16 +23,19 @@ public class ToolCallingLoop {
     private final Map<String, AgentTool> tools;
     private final int maxIterations;
     private final ObjectMapper mapper;
+    private final MetricsPublisher metricsPublisher;
 
     public ToolCallingLoop(
             ClaudeApiClient claudeApiClient,
             Map<String, AgentTool> tools,
             int maxIterations,
-            ObjectMapper mapper) {
+            ObjectMapper mapper,
+            MetricsPublisher metricsPublisher) {
         this.claudeApiClient = claudeApiClient;
         this.tools = tools;
         this.maxIterations = maxIterations;
         this.mapper = mapper;
+        this.metricsPublisher = metricsPublisher;
     }
 
     public ReportContent run(
@@ -47,6 +52,8 @@ public class ToolCallingLoop {
                     new ClaudeRequest(model, maxTokens, systemPrompt, toolDefinitions, messages);
             ClaudeResponse response = claudeApiClient.send(request);
 
+            recordTokens(response.usage());
+
             if (response.isEndTurn()) {
                 return parseReport(response.textContent());
             }
@@ -62,6 +69,12 @@ public class ToolCallingLoop {
         }
 
         throw new AgentIterationLimitException(maxIterations);
+    }
+
+    private void recordTokens(UsageDto usage) {
+        if (usage != null) {
+            metricsPublisher.recordAgentTokensUsed(usage.inputTokens(), usage.outputTokens());
+        }
     }
 
     private String executeToolSafely(ContentBlock toolUse) {

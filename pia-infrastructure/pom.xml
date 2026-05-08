@@ -49,6 +49,16 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
     </dependency>
+    <!-- CloudWatch metrics registry (publishes Micrometer metrics to CloudWatch) -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-cloudwatch2</artifactId>
+    </dependency>
+    <!-- Micrometer Tracing bridge to OpenTelemetry SDK -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-bridge-otel</artifactId>
+    </dependency>
 
     <!-- JSON structured logging -->
     <dependency>
