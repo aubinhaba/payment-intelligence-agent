@@ -1,0 +1,6 @@
+# Copy this file to terraform.tfvars and adjust values.
+# terraform.tfvars is gitignored — never commit secrets here.
+
+aws_region  = "us-east-1"
+alert_email = ""          # Optional: set to receive CloudWatch alarm emails
+image_tag   = "latest"    # Updated by CI/CD after each successful build

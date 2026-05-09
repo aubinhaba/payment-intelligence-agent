@@ -84,9 +84,13 @@ logs/
 jacoco.exec
 surefire-reports/
 failsafe-reports/
-Makefile
 CHANGELOG.md
 config/
 !**/src/**/config/
 settings-local.xml
+terraform/cleanup.bat
+terraform/cleanup.sh
+scripts/
+Makefile
+terraform/environments/dev/README.md
 
