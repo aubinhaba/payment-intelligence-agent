@@ -5,8 +5,9 @@ locals {
 # ── Log Groups ────────────────────────────────────────────────────────────────
 
 resource "aws_cloudwatch_log_group" "app" {
-  name              = "/pia/app"
+  name              = "/pia/${var.environment}/app"
   retention_in_days = var.log_retention_days
+  kms_key_id        = var.kms_key_id
 
   tags = {
     Environment = var.environment
@@ -15,12 +16,41 @@ resource "aws_cloudwatch_log_group" "app" {
 }
 
 resource "aws_cloudwatch_log_group" "sqs" {
-  name              = "/pia/sqs"
+  name              = "/pia/${var.environment}/sqs"
   retention_in_days = var.log_retention_days
+  kms_key_id        = var.kms_key_id
 
   tags = {
     Environment = var.environment
     Application = var.app_name
+  }
+}
+
+# ── Log Metric Filters ────────────────────────────────────────────────────────
+
+resource "aws_cloudwatch_log_metric_filter" "app_errors" {
+  name           = "${local.prefix}-app-errors"
+  log_group_name = aws_cloudwatch_log_group.app.name
+  pattern        = "[time, request_id, level=ERROR*, ...]"
+
+  metric_transformation {
+    name      = "pia.app.errors"
+    namespace = var.metrics_namespace
+    value     = "1"
+    unit      = "Count"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "pan_exposure" {
+  name           = "${local.prefix}-pan-exposure"
+  log_group_name = aws_cloudwatch_log_group.app.name
+  pattern        = "[time, request_id, level, logger, message=*PAN* | message=*card_number*]"
+
+  metric_transformation {
+    name      = "pia.security.pan.exposure"
+    namespace = var.metrics_namespace
+    value     = "1"
+    unit      = "Count"
   }
 }
 
@@ -224,16 +254,18 @@ resource "aws_cloudwatch_metric_alarm" "claude_error_rate" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "anomaly_detection_stuck" {
+  count               = var.anomaly_min_detection_rate > 0 ? 1 : 0
   alarm_name          = "${local.prefix}-anomaly-detection-stuck"
   alarm_description   = "No anomaly detections in the last 5 minutes — consumer may be stuck"
   comparison_operator = "LessThanOrEqualToThreshold"
-  evaluation_periods  = 1
+  evaluation_periods  = 2
+  datapoints_to_alarm = 2
   metric_name         = "pia.anomalies.detected"
   namespace           = var.metrics_namespace
   period              = 300
   statistic           = "Sum"
   threshold           = var.anomaly_min_detection_rate
-  treat_missing_data  = "breaching"
+  treat_missing_data  = "notBreaching"
 
   alarm_actions = [aws_sns_topic.alerts.arn]
   ok_actions    = [aws_sns_topic.alerts.arn]
@@ -241,6 +273,48 @@ resource "aws_cloudwatch_metric_alarm" "anomaly_detection_stuck" {
   tags = {
     Environment = var.environment
     Application = var.app_name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "app_error_rate" {
+  alarm_name          = "${local.prefix}-app-error-rate"
+  alarm_description   = "Application error rate exceeds threshold"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "pia.app.errors"
+  namespace           = var.metrics_namespace
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 10
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+  ok_actions    = [aws_sns_topic.alerts.arn]
+
+  tags = {
+    Environment = var.environment
+    Application = var.app_name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "pan_exposure_critical" {
+  alarm_name          = "${local.prefix}-pan-exposure-CRITICAL"
+  alarm_description   = "PAN detected in logs — IMMEDIATE PCI-DSS violation"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "pia.security.pan.exposure"
+  namespace           = var.metrics_namespace
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+
+  tags = {
+    Environment = var.environment
+    Application = var.app_name
+    Severity    = "CRITICAL"
   }
 }
 

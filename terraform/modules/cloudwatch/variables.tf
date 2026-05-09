@@ -19,6 +19,17 @@ variable "log_retention_days" {
   description = "CloudWatch log group retention in days"
   type        = number
   default     = 14
+
+  validation {
+    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.log_retention_days)
+    error_message = "log_retention_days must be a valid CloudWatch retention value."
+  }
+}
+
+variable "kms_key_id" {
+  description = "KMS key ARN for encrypting CloudWatch logs (required for PCI-DSS compliance)"
+  type        = string
+  default     = null
 }
 
 variable "alert_email" {
@@ -39,7 +50,12 @@ variable "claude_error_rate_threshold" {
 }
 
 variable "anomaly_min_detection_rate" {
-  description = "Minimum anomaly detections per 5 min window (below = stuck consumer alarm)"
+  description = "Minimum anomaly detections per 5 min window (below = stuck consumer alarm). Set to 0 to disable alarm."
   type        = number
-  default     = 0
+  default     = 5
+
+  validation {
+    condition     = var.anomaly_min_detection_rate >= 0
+    error_message = "anomaly_min_detection_rate must be >= 0."
+  }
 }
