@@ -70,6 +70,7 @@
     <spotbugs-plugin.version>4.8.6.6</spotbugs-plugin.version>
     <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
     <google-java-format.version>1.22.0</google-java-format.version>
+    <owasp-plugin.version>10.0.4</owasp-plugin.version>
 
     <!-- Quality thresholds (progressively enforced as the codebase grows) -->
     <jacoco.line.coverage>0.00</jacoco.line.coverage>
@@ -372,6 +373,46 @@
   </build>
 
   <profiles>
+    <!-- OWASP dependency vulnerability scan — run in CI security stage or manually.
+         Requires NVD_API_KEY env var for fast NVD feed download (optional but recommended).
+         Usage: mvn verify -P security -->
+    <profile>
+      <id>security</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.owasp</groupId>
+            <artifactId>dependency-check-maven</artifactId>
+            <version>${owasp-plugin.version}</version>
+            <configuration>
+              <!-- Block build on CVSS score >= 7 (HIGH/CRITICAL) -->
+              <failBuildOnCVSS>7</failBuildOnCVSS>
+              <formats>
+                <format>HTML</format>
+                <format>JSON</format>
+              </formats>
+              <outputDirectory>${project.build.directory}/dependency-check</outputDirectory>
+              <suppressionFiles>
+                <suppressionFile>${maven.multiModuleProjectDirectory}/owasp-suppressions.xml</suppressionFile>
+              </suppressionFiles>
+              <!-- Optional NVD API key for faster feed download (set via env or -D) -->
+              <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+              <!-- Skip test-scope dependencies (not shipped in production image) -->
+              <skipTestScope>true</skipTestScope>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>aggregate</goal>
+                </goals>
+                <phase>verify</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <!-- Activate integration tests (Testcontainers / LocalStack) only on demand -->
     <profile>
       <id>integration</id>

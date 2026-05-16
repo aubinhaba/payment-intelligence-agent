@@ -1,0 +1,11 @@
+# Trivy CVE suppression list
+# Format: CVE-YYYY-NNNNN  # reason — date added
+#
+# Keep this list short and justified. Each entry must have a reason.
+# Review quarterly: remove entries when upstream fixes are available.
+
+# Spring Boot / Netty — no HTTP server exposed in distroless image, not reachable
+# CVE-YYYY-XXXXX  # example: add real entries here as needed
+
+# OWASP NVD false positives on test-scope deps
+# These deps are never included in the final image (test scope)

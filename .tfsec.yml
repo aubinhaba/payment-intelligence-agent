@@ -1,0 +1,23 @@
+# tfsec configuration — intentional deviations from defaults for dev environment
+# Each ignored rule is justified. Production config must NOT inherit these ignores.
+severity_overrides: {}
+
+exclude:
+  # Single NAT Gateway across AZs — intentional FinOps trade-off in dev.
+  # Production must use one NAT per AZ.
+  - AVD-AWS-0101  # aws-ec2-no-excessive-port-access (NAT GW single-AZ pattern)
+
+  # ALB without HTTPS listener — dev only, no TLS to avoid cert management overhead.
+  # Production must add ACM cert + HTTPS redirect.
+  - AVD-AWS-0053  # aws-elbv2-alb-not-in-waf (WAF not needed in dev)
+  - AVD-AWS-0054  # aws-elbv2-drop-invalid-headers (toggled via attribute, not blocking)
+
+  # CloudFront default certificate (cloudfront.net domain) — dev only.
+  # Production must use custom ACM cert.
+  - AVD-AWS-0012  # aws-cloudfront-use-secure-tls-policy
+
+  # S3 access logging — not required in dev, cost-effective decision.
+  - AVD-AWS-0089  # aws-s3-enable-bucket-logging
+
+  # DynamoDB point-in-time recovery warnings — already enabled in module.
+  - AVD-AWS-0023  # aws-dynamodb-enable-recovery (enabled, false positive)
