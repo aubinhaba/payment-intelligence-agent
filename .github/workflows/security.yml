@@ -1,0 +1,98 @@
+name: Security Scan (Weekly)
+
+on:
+  schedule:
+    # Every Monday at 08:00 UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch:  # allow manual trigger
+
+jobs:
+  # ── Dependency vulnerability scan ─────────────────────────────────────────
+  owasp:
+    name: OWASP Full Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run OWASP dependency check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: mvn -B -ntp verify -P security -DskipTests
+        continue-on-error: true  # collect report even if threshold is hit
+
+      - name: Upload OWASP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-weekly-${{ github.run_id }}
+          path: "**/target/dependency-check/"
+          retention-days: 90
+
+  # ── Container image scan ──────────────────────────────────────────────────
+  trivy-images:
+    name: Trivy Image Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { dockerfile: pia-bootstrap/Dockerfile, image: pia-core }
+          - { dockerfile: pia-simulator/Dockerfile, image: pia-simulator }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.service.image }}
+        run: docker build -f ${{ matrix.service.dockerfile }} -t ${{ matrix.service.image }}:scan .
+
+      - name: Trivy scan — ${{ matrix.service.image }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref:    ${{ matrix.service.image }}:scan
+          format:       sarif
+          output:       trivy-${{ matrix.service.image }}.sarif
+          severity:     CRITICAL,HIGH,MEDIUM
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.service.image }}.sarif
+
+  # ── Terraform security scan ───────────────────────────────────────────────
+  tfsec:
+    name: tfsec Weekly Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          additional_args: --config-file ../.tfsec.yml --format sarif --out tfsec.sarif
+        continue-on-error: true
+
+      - name: Upload tfsec SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec.sarif
+
+  # ── Secret scanning (gitleaks) ────────────────────────────────────────────
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for secret scanning
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

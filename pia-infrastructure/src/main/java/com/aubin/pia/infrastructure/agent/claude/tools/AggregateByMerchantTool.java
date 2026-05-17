@@ -18,6 +18,7 @@ public class AggregateByMerchantTool implements AgentTool {
     private final TransactionRepository transactionRepository;
     private final ObjectMapper mapper;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // ObjectMapper is a thread-safe singleton
     public AggregateByMerchantTool(
             TransactionRepository transactionRepository, ObjectMapper mapper) {
         this.transactionRepository = transactionRepository;

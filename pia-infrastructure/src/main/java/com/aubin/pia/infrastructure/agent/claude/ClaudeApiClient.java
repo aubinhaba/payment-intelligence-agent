@@ -15,6 +15,7 @@ public class ClaudeApiClient {
     private final String apiKey;
     private final ObjectMapper mapper;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // WebClient and ObjectMapper are thread-safe singletons
     public ClaudeApiClient(WebClient webClient, String apiKey, ObjectMapper mapper) {
         this.webClient = webClient;
         this.apiKey = apiKey;

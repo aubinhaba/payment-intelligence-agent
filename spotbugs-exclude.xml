@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs exclusion filter — EI_EXPOSE_REP2 for thread-safe framework singletons.
+
+  The fields below are managed Spring / Micrometer / AWS SDK objects:
+  - They are designed to be shared across threads (internally thread-safe).
+  - They cannot be meaningfully cloned or defensively copied.
+  - Storing them directly is the correct and idiomatic pattern.
+-->
+<FindBugsFilter>
+
+  <!-- Jackson ObjectMapper — thread-safe once configured, intentionally shared -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Or>
+      <Class name="com.aubin.pia.infrastructure.agent.claude.ClaudeApiClient"/>
+      <Class name="com.aubin.pia.infrastructure.agent.claude.ToolCallingLoop"/>
+      <Class name="com.aubin.pia.infrastructure.agent.claude.tools.AggregateByMerchantTool"/>
+      <Class name="com.aubin.pia.infrastructure.agent.claude.tools.ComputeRiskScoreTool"/>
+      <Class name="com.aubin.pia.infrastructure.agent.claude.tools.FetchSimilarAnomaliesTool"/>
+      <Class name="com.aubin.pia.infrastructure.agent.claude.tools.GetTransactionHistoryTool"/>
+      <Class name="com.aubin.pia.infrastructure.persistence.dynamodb.OutboxEventPublisher"/>
+    </Or>
+    <Field name="mapper" />
+  </Match>
+
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="com.aubin.pia.infrastructure.persistence.dynamodb.OutboxEventPublisher"/>
+    <Field name="objectMapper"/>
+  </Match>
+
+  <!-- Spring WebClient — immutable builder product, thread-safe -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="com.aubin.pia.infrastructure.agent.claude.ClaudeApiClient"/>
+    <Field name="webClient"/>
+  </Match>
+
+  <!-- Micrometer MeterRegistry — thread-safe registry -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="com.aubin.pia.infrastructure.observability.MicrometerMetricsPublisher"/>
+    <Field name="registry"/>
+  </Match>
+
+  <!-- AWS SDK v2 clients — thread-safe, designed for sharing -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="com.aubin.pia.infrastructure.security.SsmSecretsLoader"/>
+    <Field name="ssmClient"/>
+  </Match>
+
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="com.aubin.pia.infrastructure.storage.s3.S3ReportStorage"/>
+    <Field name="s3Client"/>
+  </Match>
+
+  <!-- Spring Cloud AWS SqsTemplate — thread-safe messaging client -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="com.aubin.pia.simulator.EventGeneratorService"/>
+    <Field name="sqsTemplate"/>
+  </Match>
+
+</FindBugsFilter>

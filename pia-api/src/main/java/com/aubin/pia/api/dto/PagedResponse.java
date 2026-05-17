@@ -4,6 +4,10 @@ import java.util.List;
 
 public record PagedResponse<T>(List<T> content, int page, int size, int totalElements) {
 
+    public PagedResponse {
+        content = content == null ? null : List.copyOf(content);
+    }
+
     public static <T> PagedResponse<T> of(List<T> content, int page, int size) {
         return new PagedResponse<>(content, page, size, content.size());
     }

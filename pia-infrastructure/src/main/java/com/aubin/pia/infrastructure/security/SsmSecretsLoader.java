@@ -28,6 +28,7 @@ public class SsmSecretsLoader implements ApplicationRunner {
     private final SsmClient ssmClient;
     private final String claudeApiKeyPath;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // SsmClient is an AWS SDK managed singleton
     public SsmSecretsLoader(
             SsmClient ssmClient,
             @Value("${pia.ssm.claude-api-key-path:/pia/claude/api-key}") String claudeApiKeyPath) {

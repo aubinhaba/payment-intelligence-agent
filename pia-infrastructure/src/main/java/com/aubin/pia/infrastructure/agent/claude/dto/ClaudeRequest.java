@@ -30,8 +30,8 @@ public final class ClaudeRequest {
         this.model = model;
         this.maxTokens = maxTokens;
         this.system = system;
-        this.tools = tools;
-        this.messages = messages;
+        this.tools = tools == null ? null : List.copyOf(tools);
+        this.messages = messages == null ? null : List.copyOf(messages);
     }
 
     public String getModel() {
@@ -47,10 +47,10 @@ public final class ClaudeRequest {
     }
 
     public List<ToolDefinition> getTools() {
-        return tools;
+        return tools == null ? null : List.copyOf(tools);
     }
 
     public List<MessageDto> getMessages() {
-        return messages;
+        return messages == null ? null : List.copyOf(messages);
     }
 }

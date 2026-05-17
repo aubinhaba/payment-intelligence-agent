@@ -106,7 +106,11 @@ public class ClaudeAgentConfig {
             @Value("${pia.claude.system-prompt}") String systemPrompt,
             MetricsPublisher metricsPublisher) {
         return new ClaudeAgentAdapter(
-                toolCallingLoop, agentToolRegistry, model, maxTokens, systemPrompt,
+                toolCallingLoop,
+                agentToolRegistry,
+                model,
+                maxTokens,
+                systemPrompt,
                 metricsPublisher);
     }
 }

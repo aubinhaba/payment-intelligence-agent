@@ -30,7 +30,7 @@ public final class ClaudeResponse {
             @JsonProperty("usage") UsageDto usage) {
         this.id = id;
         this.stopReason = stopReason;
-        this.content = content;
+        this.content = content == null ? null : List.copyOf(content);
         this.usage = usage;
     }
 
@@ -62,7 +62,7 @@ public final class ClaudeResponse {
     }
 
     public List<ContentBlock> getContent() {
-        return content;
+        return content == null ? null : List.copyOf(content);
     }
 
     public UsageDto usage() {

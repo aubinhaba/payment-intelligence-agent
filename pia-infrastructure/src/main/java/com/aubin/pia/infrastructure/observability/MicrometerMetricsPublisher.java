@@ -15,6 +15,7 @@ public class MicrometerMetricsPublisher implements MetricsPublisher {
 
     private final MeterRegistry registry;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // MeterRegistry is a thread-safe managed singleton
     public MicrometerMetricsPublisher(MeterRegistry registry) {
         this.registry = registry;
     }

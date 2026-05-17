@@ -17,6 +17,7 @@ public class FetchSimilarAnomaliesTool implements AgentTool {
     private final AnomalyRepository anomalyRepository;
     private final ObjectMapper mapper;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // ObjectMapper is a thread-safe singleton
     public FetchSimilarAnomaliesTool(AnomalyRepository anomalyRepository, ObjectMapper mapper) {
         this.anomalyRepository = anomalyRepository;
         this.mapper = mapper;
