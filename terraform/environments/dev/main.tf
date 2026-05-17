@@ -67,6 +67,7 @@ module "sqs" {
 
   environment = "dev"
   app_name    = "pia"
+  kms_key_id  = module.kms.kms_key_id
 }
 
 # ── DynamoDB ──────────────────────────────────────────────────────────────────

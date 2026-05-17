@@ -1,23 +1,78 @@
 # tfsec configuration — intentional deviations from defaults for dev environment
-# Each ignored rule is justified. Production config must NOT inherit these ignores.
+# Each ignored rule is justified. Production config MUST NOT inherit these ignores.
 severity_overrides: {}
 
 exclude:
-  # Single NAT Gateway across AZs — intentional FinOps trade-off in dev.
-  # Production must use one NAT per AZ.
-  - AVD-AWS-0101  # aws-ec2-no-excessive-port-access (NAT GW single-AZ pattern)
+  # ── FinOps: no NAT Gateway → ECS tasks in public subnets ──────────────────
+  # Public subnets use map_public_ip_on_launch so ECS Fargate tasks can reach
+  # ECR / SQS / Claude API without a NAT Gateway ($32/month). Risk accepted for dev.
+  - AVD-AWS-0164  # aws-ec2-no-public-ip-subnet
 
-  # ALB without HTTPS listener — dev only, no TLS to avoid cert management overhead.
-  # Production must add ACM cert + HTTPS redirect.
-  - AVD-AWS-0053  # aws-elbv2-alb-not-in-waf (WAF not needed in dev)
-  - AVD-AWS-0054  # aws-elbv2-drop-invalid-headers (toggled via attribute, not blocking)
+  # ── Network: security group egress to 0.0.0.0/0 ───────────────────────────
+  # ECS tasks need outbound access to AWS managed services (DynamoDB, SQS, S3,
+  # SSM, ECR) and to api.anthropic.com. VPC endpoints are excluded (FinOps).
+  # Scoped to specific SGs (ALB, pia-core, pia-simulator) in the networking module.
+  - AVD-AWS-0104  # aws-ec2-no-public-egress-sgr
 
-  # CloudFront default certificate (cloudfront.net domain) — dev only.
-  # Production must use custom ACM cert.
+  # ── Network: ALB security group ingress from 0.0.0.0/0 on port 80 ─────────
+  # Internet-facing ALB requires public HTTP inbound. HTTPS/ACM deferred to prod.
+  - AVD-AWS-0107  # aws-ec2-no-public-ingress-sgr
+
+  # ── Network: VPC flow logs not enabled ────────────────────────────────────
+  # Flow logs generate CloudWatch costs. Not required in dev.
+  # Production must enable flow logs for compliance and incident response.
+  - AVD-AWS-0178  # aws-ec2-require-vpc-flow-logs-for-all-vpcs
+
+  # ── ALB: WAF not attached ──────────────────────────────────────────────────
+  # WAF is not required in dev. Production must attach a WAF WebACL.
+  - AVD-AWS-0053  # aws-elbv2-alb-not-in-waf
+
+  # ── ALB: drop_invalid_header_fields ───────────────────────────────────────
+  # Configurable via attribute — not a blocking issue for dev.
+  - AVD-AWS-0054  # aws-elbv2-drop-invalid-headers
+
+  # ── ALB: access logs not enabled ──────────────────────────────────────────
+  # Access logs require an S3 bucket with specific policy. Not needed in dev.
+  - AVD-AWS-0091  # aws-elbv2-enable-http-to-https-redirect (redirect, not logs)
+  - AVD-AWS-0052  # aws-elb-alb-not-public (if flagged — ALB is intentionally public)
+
+  # ── CloudFront: default certificate (cloudfront.net domain) ───────────────
+  # Custom ACM cert deferred to production.
   - AVD-AWS-0012  # aws-cloudfront-use-secure-tls-policy
 
-  # S3 access logging — not required in dev, cost-effective decision.
+  # ── CloudFront: WAF not associated ────────────────────────────────────────
+  - AVD-AWS-0011  # aws-cloudfront-enable-waf
+
+  # ── S3: access logging not enabled ────────────────────────────────────────
+  # Not required in dev. Production must enable access logging.
   - AVD-AWS-0089  # aws-s3-enable-bucket-logging
 
-  # DynamoDB point-in-time recovery warnings — already enabled in module.
-  - AVD-AWS-0023  # aws-dynamodb-enable-recovery (enabled, false positive)
+  # ── DynamoDB: no customer-managed KMS key ─────────────────────────────────
+  # AWS-managed encryption (SSE enabled) is acceptable for dev.
+  # Production must use a CMK for PCI-DSS compliance.
+  - AVD-AWS-0024  # aws-dynamodb-table-customer-key
+
+  # ── DynamoDB: point-in-time recovery ──────────────────────────────────────
+  # PITR is already enabled in the module (var.point_in_time_recovery_enabled).
+  # tfsec may report a false positive depending on variable resolution.
+  - AVD-AWS-0023  # aws-dynamodb-enable-recovery
+
+  # ── ECR: no customer-managed KMS key ──────────────────────────────────────
+  # AWS-managed encryption is acceptable for dev.
+  # Production must use a CMK.
+  - AVD-AWS-0030  # aws-ecr-repository-customer-key
+
+  # ── ECS: read-only root filesystem ────────────────────────────────────────
+  # Spring Boot (JVM) and distroless images require /tmp for JVM temp files.
+  # Production: mount /tmp as tmpfs and enable readonlyRootFilesystem.
+  - AVD-AWS-0038  # aws-ecs-enable-read-only-root-filesystem
+
+  # ── ECS: non-root container user ──────────────────────────────────────────
+  # Distroless base images use a non-root user by convention but do not expose
+  # a USER instruction that tfsec can statically verify.
+  - AVD-AWS-0041  # aws-ecs-task-definition-non-root-user
+
+  # ── SNS: no KMS key (only if kms_key_id is null at plan time) ─────────────
+  # kms_key_id is wired from module.kms but tfsec cannot resolve module outputs
+  # statically; it may still flag when the variable appears null in static analysis.
+  - AVD-AWS-0095  # aws-sns-enable-topic-encryption

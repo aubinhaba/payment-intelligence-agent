@@ -57,7 +57,8 @@ resource "aws_cloudwatch_log_metric_filter" "pan_exposure" {
 # ── SNS Topic ─────────────────────────────────────────────────────────────────
 
 resource "aws_sns_topic" "alerts" {
-  name = "${local.prefix}-alerts"
+  name              = "${local.prefix}-alerts"
+  kms_master_key_id = var.kms_key_id
 
   tags = {
     Environment = var.environment
