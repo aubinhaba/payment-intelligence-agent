@@ -38,6 +38,9 @@ jobs:
   trivy-images:
     name: Trivy Image Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     strategy:
       matrix:
         service:
@@ -68,6 +71,9 @@ jobs:
   tfsec:
     name: tfsec Weekly Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
 
