@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -25,6 +26,7 @@ public class ToolCallingLoop {
     private final ObjectMapper mapper;
     private final MetricsPublisher metricsPublisher;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // ObjectMapper is a thread-safe singleton
     public ToolCallingLoop(
             ClaudeApiClient claudeApiClient,
             Map<String, AgentTool> tools,
@@ -32,9 +34,9 @@ public class ToolCallingLoop {
             ObjectMapper mapper,
             MetricsPublisher metricsPublisher) {
         this.claudeApiClient = claudeApiClient;
-        this.tools = tools;
+        this.tools = Map.copyOf(tools);
         this.maxIterations = maxIterations;
-        this.mapper = mapper;
+        this.mapper = mapper; // ObjectMapper is a thread-safe singleton — no defensive copy needed
         this.metricsPublisher = metricsPublisher;
     }
 
@@ -93,7 +95,7 @@ public class ToolCallingLoop {
             String summary = node.required("summary").asText();
             String analysis = node.required("analysis").asText();
             return new ReportContent(summary, analysis);
-        } catch (Exception e) {
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             return new ReportContent("Analysis complete", textContent);
         }
     }

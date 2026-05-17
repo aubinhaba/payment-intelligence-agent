@@ -10,6 +10,10 @@ public record MetricsSummaryResponse(
         int reportCount,
         Map<String, Long> anomaliesBySeverity) {
 
+    public MetricsSummaryResponse {
+        anomaliesBySeverity = anomaliesBySeverity == null ? null : Map.copyOf(anomaliesBySeverity);
+    }
+
     public static MetricsSummaryResponse from(Summary summary) {
         return new MetricsSummaryResponse(
                 summary.transactionCount(),

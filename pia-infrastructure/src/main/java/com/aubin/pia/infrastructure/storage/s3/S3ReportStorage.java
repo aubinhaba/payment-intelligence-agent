@@ -23,6 +23,7 @@ public class S3ReportStorage implements ReportStorage {
     private final S3Client s3Client;
     private final String bucket;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // S3Client is an AWS SDK managed singleton
     public S3ReportStorage(S3Client s3Client, @Value("${pia.s3.reports-bucket}") String bucket) {
         this.s3Client = s3Client;
         this.bucket = bucket;

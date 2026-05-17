@@ -30,6 +30,7 @@ public class ComputeRiskScoreTool implements AgentTool {
     private final Set<String> highRiskCountries;
     private final ObjectMapper mapper;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // ObjectMapper is a thread-safe singleton
     public ComputeRiskScoreTool(
             TransactionRepository transactionRepository,
             AnomalyRepository anomalyRepository,

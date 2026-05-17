@@ -18,7 +18,7 @@ public final class ToolDefinition {
     public ToolDefinition(String name, String description, Map<String, Object> inputSchema) {
         this.name = name;
         this.description = description;
-        this.inputSchema = inputSchema;
+        this.inputSchema = inputSchema == null ? null : Map.copyOf(inputSchema);
     }
 
     public String getName() {
@@ -30,6 +30,6 @@ public final class ToolDefinition {
     }
 
     public Map<String, Object> getInputSchema() {
-        return inputSchema;
+        return inputSchema == null ? null : Map.copyOf(inputSchema);
     }
 }

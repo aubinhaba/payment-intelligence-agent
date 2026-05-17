@@ -11,7 +11,7 @@ public class CorsConfig implements WebMvcConfigurer {
     private final String[] allowedOrigins;
 
     public CorsConfig(@Value("${pia.api.cors.allowed-origins}") String[] allowedOrigins) {
-        this.allowedOrigins = allowedOrigins;
+        this.allowedOrigins = allowedOrigins.clone();
     }
 
     @Override

@@ -31,7 +31,7 @@ public class ClaudeAgentAdapter implements AgentPort {
             String systemPrompt,
             MetricsPublisher metricsPublisher) {
         this.loop = loop;
-        this.tools = tools;
+        this.tools = Map.copyOf(tools);
         this.toolDefinitions =
                 tools.values().stream()
                         .map(t -> new ToolDefinition(t.name(), t.description(), t.inputSchema()))

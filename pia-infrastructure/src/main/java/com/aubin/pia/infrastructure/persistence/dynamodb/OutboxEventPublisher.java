@@ -30,6 +30,7 @@ public class OutboxEventPublisher implements EventPublisher {
     private final DynamoDbTable<OutboxEntity> table;
     private final ObjectMapper objectMapper;
 
+    @SuppressWarnings({"EI_EXPOSE_REP2"}) // ObjectMapper is a thread-safe singleton
     public OutboxEventPublisher(
             DynamoDbEnhancedClient enhancedClient,
             @Value("${pia.dynamodb.table-name}") String tableName,
