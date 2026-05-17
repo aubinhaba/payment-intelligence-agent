@@ -76,3 +76,15 @@ exclude:
   # kms_key_id is wired from module.kms but tfsec cannot resolve module outputs
   # statically; it may still flag when the variable appears null in static analysis.
   - AVD-AWS-0095  # aws-sns-enable-topic-encryption
+
+  # ── S3: versioning not enabled on dashboard bucket ────────────────────────
+  # The dashboard bucket serves static Angular build artifacts. Versioning adds
+  # S3 storage cost for duplicate copies of the same compiled assets with no
+  # recovery benefit (each deploy is a clean full replacement from CI artifacts).
+  - AVD-AWS-0090  # aws-s3-enable-versioning
+
+  # ── ALB: deletion protection disabled ─────────────────────────────────────
+  # Dev environment only. Deletion protection must stay off so that
+  # `terraform destroy` works cleanly during FinOps session teardown.
+  # Production MUST set enable_deletion_protection = true.
+  - AVD-AWS-0083  # aws-elbv2-deletion-protection-enabled
