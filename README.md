@@ -41,58 +41,77 @@ PIA is a **portfolio-grade** implementation of a production-ready autonomous ana
 ### C4 — Context
 
 ```mermaid
-C4Context
-  title Payment Intelligence Agent — System Context
+graph TB
+    Analyst[👤 Risk Analyst<br/>Consulte rapports et alertes]
+    PlatformEng[👤 Platform Engineer<br/>Monitore la santé technique]
 
-  Person(analyst, "Risk Analyst", "Reviews anomaly reports and fraud alerts")
-  Person(engineer, "Platform Engineer", "Monitors system health and metrics")
+    PIA[🎯 Payment Intelligence Agent<br/>Détection de fraude<br/>+ rapports IA]
 
-  System(pia, "Payment Intelligence Agent", "Ingests payment events, detects anomalies via rules + LLM, generates risk reports")
+    Source[📡 Source de paiements<br/>simulé par pia-simulator]
+    Claude[🤖 Anthropic Claude API<br/>Analyse contextuelle]
+    SNS[📧 SNS / Email<br/>Alertes opérateur]
 
-  System_Ext(claude, "Claude API (Anthropic)", "LLM with tool calling — enriches anomaly analysis")
-  System_Ext(simulator, "Event Simulator", "Generates realistic payment events at configurable volume")
+    Source -->|événements de paiement| PIA
+    PIA -->|tool calling autonome| Claude
+    PIA -->|alarmes CRITICAL| SNS
+    PIA -->|dashboard + REST API| Analyst
+    PIA -->|logs, métriques, alarmes| PlatformEng
 
-  Rel(simulator, pia, "Publishes payment events", "SQS")
-  Rel(pia, claude, "Sends analysis prompts + tool results", "HTTPS / Anthropic API")
-  Rel(analyst, pia, "Consults reports and alerts", "Angular dashboard / HTTPS")
-  Rel(engineer, pia, "Monitors metrics and logs", "CloudWatch dashboard")
+    style PIA fill:#1168bd,stroke:#0b4884,color:#fff
+    style Analyst fill:#08427b,stroke:#073b6f,color:#fff
+    style PlatformEng fill:#08427b,stroke:#073b6f,color:#fff
+    style Source fill:#999,stroke:#666,color:#fff
+    style Claude fill:#999,stroke:#666,color:#fff
+    style SNS fill:#999,stroke:#666,color:#fff
 ```
 
 ### C4 — Container
 
 ```mermaid
-C4Container
-  title Payment Intelligence Agent — Containers
+graph TB
+    Source[📡 Event Source<br/>SQS sender]
 
-  Person(analyst, "Risk Analyst")
-  Person(engineer, "Platform Engineer")
+    subgraph "AWS account — eu-west-1"
+        subgraph "VPC pia-dev"
+            ALB[⚖️ ALB<br/>Application Load Balancer]
 
-  System_Boundary(aws, "AWS — eu-west-1") {
-    Container(sim, "pia-simulator", "Spring Boot / Fargate", "Generates payment events on a configurable schedule")
-    ContainerDb(sqs, "SQS", "AWS SQS", "payment-events queue + DLQ")
-    Container(core, "pia-core", "Spring Boot / Fargate", "Ingestion, anomaly detection, agent orchestration, report generation")
-    ContainerDb(dynamo, "DynamoDB", "AWS DynamoDB", "Single-table: transactions, anomalies, reports, outbox")
-    ContainerDb(s3, "S3 reports", "AWS S3", "JSON + Markdown analysis reports")
-    Container(api, "REST BFF", "Spring MVC (embedded in pia-core)", "API endpoints for the Angular dashboard")
-    Container(dashboard, "Angular dashboard", "Angular 18 / S3 + CloudFront", "Risk analyst UI: transactions, anomalies, reports, KPIs")
-    Container(cw, "CloudWatch", "AWS CloudWatch", "Metrics, alarms, structured logs, SNS alerts")
-    Container(alb, "ALB", "AWS ALB", "Routes HTTP traffic to pia-core API")
-  }
+            subgraph "ECS Fargate cluster"
+                Core[🟦 pia-core<br/>Spring Boot · Java 21<br/>port 8080]
+                Sim[🟦 pia-simulator<br/>Spring Boot scheduler]
+            end
+        end
 
-  System_Ext(claude, "Claude API")
+        SQS[(📬 SQS<br/>payment-events<br/>+ DLQ)]
+        DDB[(💾 DynamoDB<br/>pia-table<br/>single-table design)]
+        S3[(🗂️ S3<br/>reports bucket)]
+        SSM[(🔐 SSM Parameter Store<br/>SecureString)]
 
-  Rel(sim, sqs, "Publishes PaymentEvent JSON")
-  Rel(sqs, core, "Consumes events", "SQS listener")
-  Rel(core, dynamo, "Reads/writes transactions, anomalies, outbox")
-  Rel(core, s3, "Stores reports")
-  Rel(core, claude, "Tool-calling loop", "HTTPS")
-  Rel(core, cw, "Publishes metrics + logs")
-  Rel(analyst, alb, "HTTP", "browser")
-  Rel(alb, api, "Forwards requests")
-  Rel(api, dynamo, "Queries")
-  Rel(api, s3, "Fetches reports")
-  Rel(analyst, dashboard, "Uses", "CloudFront HTTPS")
-  Rel(engineer, cw, "Monitors")
+        CF[🌍 CloudFront<br/>Distribution]
+        Dashboard[(🗂️ S3<br/>Angular static)]
+    end
+
+    Claude[🤖 Claude API<br/>api.anthropic.com]
+    Analyst[👤 Risk Analyst]
+
+    Source -->|HTTPS / SigV4| SQS
+    Sim -->|génère événements| SQS
+    SQS -->|consume| Core
+    Core -->|R/W| DDB
+    Core -->|PUT reports| S3
+    Core -->|GET API key| SSM
+    Core -->|tool calling loop| Claude
+    Core -->|REST API JSON| ALB
+
+    Analyst -->|HTTPS| CF
+    CF -->|OAC| Dashboard
+    Dashboard -->|fetch| ALB
+    ALB -->|HTTP:80| Core
+
+    style Core fill:#1168bd,stroke:#0b4884,color:#fff
+    style Sim fill:#1168bd,stroke:#0b4884,color:#fff
+    style Source fill:#999,stroke:#666,color:#fff
+    style Claude fill:#999,stroke:#666,color:#fff
+    style Analyst fill:#08427b,stroke:#073b6f,color:#fff
 ```
 
 ### Flux agent IA
@@ -121,7 +140,7 @@ sequenceDiagram
         Core->>Core: publish CloudWatch alarm if severity=HIGH
     end
 ```
-## Architecture Hexagonale — Dépendances modules
+## Hexagonal architecture — Dependency modules
 
 ```mermaid
 graph TD
