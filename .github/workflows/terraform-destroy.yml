@@ -1,0 +1,101 @@
+name: Terraform Destroy (dev)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm full teardown of dev environment'
+        required: true
+
+jobs:
+  destroy:
+    name: Terraform Destroy — dev
+    runs-on: ubuntu-latest
+    environment: dev
+    if: github.event.inputs.confirm == 'destroy'
+    env:
+      AWS_REGION:   eu-west-1
+      STATE_BUCKET: pia-terraform-state-dev
+      LOCK_TABLE:   pia-terraform-locks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '~1.9'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            eu-west-1
+
+      # ── Step 1: destroy all managed resources ────────────────────────────────
+      - name: Terraform Init
+        working-directory: terraform/environments/dev
+        run: terraform init
+
+      - name: Terraform Destroy
+        working-directory: terraform/environments/dev
+        run: terraform destroy -auto-approve
+        env:
+          TF_VAR_alert_email: ""
+          TF_VAR_image_tag:   "latest"
+
+      # ── Step 2: delete tfstate backend (S3 bucket + DynamoDB lock table) ─────
+      - name: Empty and delete S3 state bucket
+        run: |
+          echo "==> Deleting all object versions from $STATE_BUCKET"
+          aws s3api list-object-versions \
+            --bucket "$STATE_BUCKET" \
+            --query 'Versions[].{Key:Key,VersionId:VersionId}' \
+            --output json | \
+          jq -r '.[] | "--delete '{\"Objects\":[{\"Key\":\"\(.Key)\",\"VersionId\":\"\(.VersionId)\"}]}'" > /dev/null || true
+
+          aws s3 rm "s3://$STATE_BUCKET" --recursive || true
+
+          aws s3api list-object-versions \
+            --bucket "$STATE_BUCKET" \
+            --output json \
+            --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' | \
+          python3 -c "
+          import sys, json, subprocess
+          data = json.load(sys.stdin)
+          objects = data.get('Objects') or []
+          if objects:
+              payload = json.dumps({'Objects': objects, 'Quiet': True})
+              subprocess.run(['aws', 's3api', 'delete-objects',
+                              '--bucket', '$STATE_BUCKET',
+                              '--delete', payload], check=True)
+              print(f'Deleted {len(objects)} versions')
+          " || true
+
+          aws s3api list-object-versions \
+            --bucket "$STATE_BUCKET" \
+            --output json \
+            --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' | \
+          python3 -c "
+          import sys, json, subprocess
+          data = json.load(sys.stdin)
+          objects = data.get('Objects') or []
+          if objects:
+              payload = json.dumps({'Objects': objects, 'Quiet': True})
+              subprocess.run(['aws', 's3api', 'delete-objects',
+                              '--bucket', '$STATE_BUCKET',
+                              '--delete', payload], check=True)
+              print(f'Deleted {len(objects)} delete markers')
+          " || true
+
+          echo "==> Deleting bucket $STATE_BUCKET"
+          aws s3api delete-bucket --bucket "$STATE_BUCKET" --region "$AWS_REGION"
+          echo "    Bucket deleted."
+
+      - name: Delete DynamoDB lock table
+        run: |
+          echo "==> Deleting DynamoDB lock table $LOCK_TABLE"
+          aws dynamodb delete-table --table-name "$LOCK_TABLE" --region "$AWS_REGION"
+          aws dynamodb wait table-not-exists --table-name "$LOCK_TABLE" --region "$AWS_REGION"
+          echo "    Lock table deleted."

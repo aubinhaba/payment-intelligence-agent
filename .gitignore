@@ -90,6 +90,7 @@ config/
 settings-local.xml
 terraform/cleanup.bat
 terraform/cleanup.sh
+terraform/README.md
 scripts/
 Makefile
 terraform/environments/dev/README.md
