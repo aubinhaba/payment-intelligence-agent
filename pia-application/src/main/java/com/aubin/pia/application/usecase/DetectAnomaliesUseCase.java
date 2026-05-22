@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.aubin.pia.application.port.out.AnomalyRepository;
 import com.aubin.pia.application.port.out.EventPublisher;
 import com.aubin.pia.application.port.out.MetricsPublisher;
@@ -15,6 +18,9 @@ import com.aubin.pia.domain.transaction.Transaction;
 import com.aubin.pia.domain.transaction.TransactionId;
 
 public class DetectAnomaliesUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(DetectAnomaliesUseCase.class);
+
     private final TransactionRepository transactionRepository;
     private final AnomalyRepository anomalyRepository;
     private final EventPublisher eventPublisher;
@@ -35,6 +41,8 @@ public class DetectAnomaliesUseCase {
     }
 
     public List<Anomaly> detect(TransactionId transactionId) {
+        log.debug("detect.start txId={}", transactionId.value());
+
         Transaction transaction =
                 transactionRepository
                         .findById(transactionId)
@@ -55,7 +63,16 @@ public class DetectAnomaliesUseCase {
                     anomalyRepository.save(anomaly);
                     eventPublisher.publishAll(anomaly.pullDomainEvents());
                     metricsPublisher.incrementAnomaliesDetected(anomaly.type(), anomaly.severity());
+                    log.info(
+                            "anomaly.detected txId={} type={} severity={}",
+                            transactionId.value(),
+                            anomaly.type(),
+                            anomaly.severity());
                 });
+
+        if (anomalies.isEmpty()) {
+            log.debug("detect.clean txId={}", transactionId.value());
+        }
 
         return anomalies;
     }

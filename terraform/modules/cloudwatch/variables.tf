@@ -43,6 +43,12 @@ variable "dlq_name" {
   type        = string
 }
 
+variable "additional_dlq_names" {
+  description = "Extra DLQ queue names to monitor (e.g. anomaly-analysis-dlq). One alarm per entry, same threshold as main DLQ."
+  type        = list(string)
+  default     = []
+}
+
 variable "claude_error_rate_threshold" {
   description = "Percentage of Claude API errors above which the alarm fires"
   type        = number

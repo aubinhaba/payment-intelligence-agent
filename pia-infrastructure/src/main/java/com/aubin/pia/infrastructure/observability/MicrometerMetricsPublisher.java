@@ -53,6 +53,11 @@ public class MicrometerMetricsPublisher implements MetricsPublisher {
     }
 
     @Override
+    public void incrementAgentFailures() {
+        registry.counter("pia.agent.failures.total").increment();
+    }
+
+    @Override
     public void incrementSqsMessagesConsumed() {
         registry.counter("pia.sqs.messages.consumed").increment();
     }

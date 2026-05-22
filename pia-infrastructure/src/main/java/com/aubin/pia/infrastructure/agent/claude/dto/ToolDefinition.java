@@ -2,8 +2,13 @@ package com.aubin.pia.infrastructure.agent.claude.dto;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect(
+        fieldVisibility = JsonAutoDetect.Visibility.ANY,
+        getterVisibility = JsonAutoDetect.Visibility.NONE,
+        isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 public final class ToolDefinition {
 
     @JsonProperty("name")

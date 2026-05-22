@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
@@ -33,10 +33,6 @@ import { Report } from '../../core/models/report.model';
             <span class="meta-label">Transaction</span>
             <span class="meta-value mono">{{ report()!.transactionId }}</span>
           </div>
-          <div class="meta-chip">
-            <span class="meta-label">Anomaly</span>
-            <span class="meta-value mono">{{ report()!.anomalyId }}</span>
-          </div>
         </div>
 
         <div class="card summary-card">
@@ -46,7 +42,7 @@ import { Report } from '../../core/models/report.model';
 
         <div class="card analysis-card">
           <h2 class="section-title">Full Analysis</h2>
-          <pre class="analysis-pre">{{ report()!.analysis }}</pre>
+          <pre class="analysis-pre">{{ bodyText() }}</pre>
         </div>
       }
     </div>
@@ -122,6 +118,24 @@ export class ReportDetailComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly report = signal<Report | null>(null);
+
+  /**
+   * Extracts displayable markdown from markdownBody.
+   * Handles legacy reports where Claude wrapped the JSON response in a ```json code fence
+   * instead of returning plain JSON — in that case we extract the `analysis` field.
+   */
+  readonly bodyText = computed(() => {
+    const body = this.report()?.markdownBody;
+    if (!body) return '';
+    const stripped = body.replace(/^```[\w]*\n/, '').replace(/\n?```$/, '').trim();
+    try {
+      const parsed = JSON.parse(stripped);
+      if (typeof parsed['analysis'] === 'string') return parsed['analysis'] as string;
+    } catch {
+      // not JSON — use as-is
+    }
+    return body;
+  });
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;

@@ -15,3 +15,15 @@ variable "image_tag" {
   type        = string
   default     = "latest"
 }
+
+variable "anomaly_analysis_visibility_timeout_seconds" {
+  description = "Visibility timeout for the anomaly-analysis queue. Must be >= worst-case Claude tool-loop latency to avoid duplicate analyses."
+  type        = number
+  default     = 600
+}
+
+variable "anomaly_analysis_max_receive_count" {
+  description = "Max receive attempts for the anomaly-analysis queue. Kept low because Claude failures are best-effort (transaction + anomalies already persisted)."
+  type        = number
+  default     = 2
+}

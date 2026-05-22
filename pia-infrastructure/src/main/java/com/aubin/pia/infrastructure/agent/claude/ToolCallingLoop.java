@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +22,8 @@ import com.aubin.pia.infrastructure.agent.claude.dto.UsageDto;
 import com.aubin.pia.infrastructure.agent.claude.tools.AgentTool;
 
 public class ToolCallingLoop {
+
+    private static final Logger log = LoggerFactory.getLogger(ToolCallingLoop.class);
 
     private final ClaudeApiClient claudeApiClient;
     private final Map<String, AgentTool> tools;
@@ -60,6 +65,11 @@ public class ToolCallingLoop {
                 return parseReport(response.textContent());
             }
 
+            if (response.isMaxTokens()) {
+                log.warn("claude.response.truncated — returning partial content as-is");
+                return parseReport(response.textContent());
+            }
+
             messages.add(new MessageDto("assistant", response.getContent()));
 
             List<ContentBlock> toolResults = new ArrayList<>();
@@ -67,7 +77,9 @@ public class ToolCallingLoop {
                 String result = executeToolSafely(toolUse);
                 toolResults.add(ContentBlock.toolResult(toolUse.getId(), result));
             }
-            messages.add(new MessageDto("user", toolResults));
+            if (!toolResults.isEmpty()) {
+                messages.add(new MessageDto("user", toolResults));
+            }
         }
 
         throw new AgentIterationLimitException(maxIterations);
@@ -91,12 +103,32 @@ public class ToolCallingLoop {
 
     private ReportContent parseReport(String textContent) {
         try {
-            JsonNode node = mapper.readTree(textContent);
+            JsonNode node = mapper.readTree(stripCodeFence(textContent));
             String summary = node.required("summary").asText();
             String analysis = node.required("analysis").asText();
             return new ReportContent(summary, analysis);
         } catch (JsonProcessingException | IllegalArgumentException e) {
             return new ReportContent("Analysis complete", textContent);
         }
+    }
+
+    /**
+     * Strips a leading ```json (or ```) / trailing ``` fence that Claude sometimes wraps around
+     * JSON.
+     */
+    private static String stripCodeFence(String text) {
+        String t = text.strip();
+        if (!t.startsWith("```")) {
+            return t;
+        }
+        int firstNewline = t.indexOf('\n');
+        if (firstNewline < 0) {
+            return t;
+        }
+        String body = t.substring(firstNewline + 1);
+        if (body.endsWith("```")) {
+            body = body.substring(0, body.length() - 3);
+        }
+        return body.strip();
     }
 }

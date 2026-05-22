@@ -1,5 +1,6 @@
 package com.aubin.pia.infrastructure.agent.claude.dto;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -7,6 +8,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * be a plain {@code String} (simple user text) or a {@code List<ContentBlock>} (structured tool-use
  * or tool-result turns).
  */
+@JsonAutoDetect(
+        fieldVisibility = JsonAutoDetect.Visibility.ANY,
+        getterVisibility = JsonAutoDetect.Visibility.NONE,
+        isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 public final class MessageDto {
 
     @JsonProperty("role")

@@ -19,6 +19,16 @@ pia:
   aws:
     ssm:
       endpoint: http://localhost:4566
+  claude:
+    api-key: local-placeholder-key   # safe value for local dev; real key loaded from LocalStack SSM
+
+management:
+  tracing:
+    enabled: false   # no OTLP collector running locally
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env
 
 logging:
   level:

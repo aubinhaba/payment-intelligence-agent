@@ -21,6 +21,7 @@ import com.aubin.pia.application.port.out.MetricsPublisher;
 import com.aubin.pia.application.port.out.ReportRepository;
 import com.aubin.pia.application.port.out.ReportStorage;
 import com.aubin.pia.application.port.out.TransactionRepository;
+import com.aubin.pia.application.usecase.AnalyzeAndReportUseCase;
 import com.aubin.pia.application.usecase.AnalyzeWithAgentUseCase;
 import com.aubin.pia.application.usecase.DetectAnomaliesUseCase;
 import com.aubin.pia.application.usecase.FindAnomaliesUseCase;
@@ -126,6 +127,13 @@ public class UseCaseConfig {
             MetricsPublisher metricsPublisher) {
         return new AnalyzeWithAgentUseCase(
                 transactionRepository, anomalyRepository, agentPort, metricsPublisher);
+    }
+
+    @Bean
+    public AnalyzeAndReportUseCase analyzeAndReportUseCase(
+            AnalyzeWithAgentUseCase analyzeWithAgentUseCase,
+            GenerateReportUseCase generateReportUseCase) {
+        return new AnalyzeAndReportUseCase(analyzeWithAgentUseCase, generateReportUseCase);
     }
 
     @Bean

@@ -42,6 +42,10 @@ public final class ClaudeResponse {
         return "tool_use".equals(stopReason);
     }
 
+    public boolean isMaxTokens() {
+        return "max_tokens".equals(stopReason);
+    }
+
     public List<ContentBlock> toolUseBlocks() {
         return content.stream().filter(ContentBlock::isToolUse).collect(Collectors.toList());
     }

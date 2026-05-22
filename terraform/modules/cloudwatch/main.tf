@@ -208,6 +208,33 @@ resource "aws_cloudwatch_metric_alarm" "dlq_depth" {
   }
 }
 
+resource "aws_cloudwatch_metric_alarm" "additional_dlq_depth" {
+  for_each = toset(var.additional_dlq_names)
+
+  alarm_name          = "${local.prefix}-${each.value}-depth"
+  alarm_description   = "Messages are stuck in the ${each.value} DLQ — check consumer errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 0
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    QueueName = each.value
+  }
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+  ok_actions    = [aws_sns_topic.alerts.arn]
+
+  tags = {
+    Environment = var.environment
+    Application = var.app_name
+  }
+}
+
 resource "aws_cloudwatch_metric_alarm" "claude_error_rate" {
   alarm_name          = "${local.prefix}-claude-error-rate"
   alarm_description   = "Claude API error rate exceeds ${var.claude_error_rate_threshold}%"

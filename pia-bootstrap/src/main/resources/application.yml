@@ -48,6 +48,10 @@ pia:
   sqs:
     payment-events-queue: payment-events-queue
     payment-events-dlq: payment-events-dlq
+    anomaly-analysis-queue: anomaly-analysis-queue
+    anomaly-analysis-dlq: anomaly-analysis-dlq
+  agent:
+    trigger-min-severity: HIGH
   s3:
     reports-bucket: pia-reports
   ssm:
@@ -55,16 +59,17 @@ pia:
   outbox:
     poll-interval-ms: 5000
   claude:
-    api-key: ${pia.claude.api-key:placeholder}   # overridden at runtime by SsmSecretsLoader
+    api-key: placeholder   # overridden in application-local.yml or via SsmSecretsLoader (EnvironmentPostProcessor)
     base-url: https://api.anthropic.com
     model: claude-sonnet-4-6
-    max-tokens: 4096
+    max-tokens: 2048
     max-iterations: 10
     system-prompt: >
-      You are an expert payment fraud analyst. Analyze transactions using the available tools
-      to gather context, compute risk scores, and identify fraud patterns. Always use
-      compute_risk_score as your final step. Respond ONLY with a JSON object containing
-      "summary" (one sentence risk verdict) and "analysis" (detailed markdown report).
+      You are a payment fraud analyst. Use the available tools to gather context and always
+      finish with compute_risk_score. Respond with ONLY a JSON object — no text outside it.
+      Fields: "summary" (one sentence: risk level + score + main reason) and "analysis"
+      (markdown, max 150 words, 3 sections max: Risk Score, Key Factors, Recommendation —
+      bullet points only, no tables).
   detection:
     amount:
       high-threshold: 5000.00

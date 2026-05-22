@@ -14,5 +14,7 @@ public interface MetricsPublisher {
 
     void recordAgentTokensUsed(int inputTokens, int outputTokens);
 
+    void incrementAgentFailures();
+
     void incrementSqsMessagesConsumed();
 }

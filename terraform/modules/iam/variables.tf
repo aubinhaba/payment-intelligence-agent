@@ -23,6 +23,12 @@ variable "sqs_dlq_arn" {
   type        = string
 }
 
+variable "extra_sqs_queue_arns" {
+  description = "Additional SQS queue/DLQ ARNs the task role may use (e.g. anomaly-analysis-queue + DLQ)"
+  type        = list(string)
+  default     = []
+}
+
 variable "s3_reports_bucket_arn" {
   description = "ARN of the S3 reports bucket"
   type        = string

@@ -18,11 +18,13 @@ import com.aubin.pia.infrastructure.persistence.dynamodb.entity.AnomalyEntity;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @Repository
 public class DynamoDbAnomalyRepository implements AnomalyRepository {
@@ -61,7 +63,12 @@ public class DynamoDbAnomalyRepository implements AnomalyRepository {
 
     @Override
     public List<Anomaly> findRecent(int limit) {
-        return table.scan(ScanEnhancedRequest.builder().limit(limit).build()).stream()
+        Expression filter =
+                Expression.builder()
+                        .expression("begins_with(sk, :skPrefix)")
+                        .putExpressionValue(":skPrefix", AttributeValue.fromS(SK_ANOMALY_PREFIX))
+                        .build();
+        return table.scan(ScanEnhancedRequest.builder().filterExpression(filter).build()).stream()
                 .flatMap(page -> page.items().stream())
                 .limit(limit)
                 .map(this::toDomain)

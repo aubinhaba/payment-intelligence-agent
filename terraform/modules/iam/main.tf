@@ -58,7 +58,7 @@ data "aws_iam_policy_document" "task" {
       "sqs:GetQueueUrl",
       "sqs:ChangeMessageVisibility",
     ]
-    resources = [var.sqs_queue_arn, var.sqs_dlq_arn]
+    resources = concat([var.sqs_queue_arn, var.sqs_dlq_arn], var.extra_sqs_queue_arns)
   }
 
   # S3 — read/write reports bucket

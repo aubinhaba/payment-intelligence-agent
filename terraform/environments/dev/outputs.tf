@@ -24,8 +24,13 @@ output "ecr_simulator_url" {
 }
 
 output "sqs_queue_url" {
-  description = "SQS main queue URL"
+  description = "SQS main queue URL (payment events)"
   value       = module.sqs.queue_url
+}
+
+output "sqs_anomaly_analysis_queue_url" {
+  description = "SQS anomaly-analysis queue URL (Claude pipeline)"
+  value       = module.sqs_anomaly_analysis.queue_url
 }
 
 output "dynamodb_table_name" {

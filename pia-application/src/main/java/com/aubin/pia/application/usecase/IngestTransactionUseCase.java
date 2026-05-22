@@ -1,5 +1,8 @@
 package com.aubin.pia.application.usecase;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.aubin.pia.application.port.in.IngestTransactionCommand;
 import com.aubin.pia.application.port.out.EventPublisher;
 import com.aubin.pia.application.port.out.MetricsPublisher;
@@ -12,6 +15,9 @@ import com.aubin.pia.domain.transaction.TransactionId;
 import com.aubin.pia.domain.transaction.TransactionStatus;
 
 public class IngestTransactionUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(IngestTransactionUseCase.class);
+
     private final TransactionRepository transactionRepository;
     private final EventPublisher eventPublisher;
     private final MetricsPublisher metricsPublisher;
@@ -26,6 +32,13 @@ public class IngestTransactionUseCase {
     }
 
     public Transaction ingest(IngestTransactionCommand command) {
+        log.debug(
+                "ingest.start txId={} amount={} {} merchant={}",
+                command.transactionId(),
+                command.amount(),
+                command.currency(),
+                command.merchantId());
+
         Transaction transaction =
                 Transaction.create(
                         new TransactionId(command.transactionId()),
@@ -40,6 +53,8 @@ public class IngestTransactionUseCase {
         transactionRepository.save(transaction);
         eventPublisher.publishAll(transaction.pullDomainEvents());
         metricsPublisher.incrementTransactionsIngested();
+
+        log.info("ingest.done txId={}", command.transactionId());
         return transaction;
     }
 }

@@ -79,7 +79,13 @@ public class DynamoDbTransactionRepository implements TransactionRepository {
 
     @Override
     public List<Transaction> findRecent(int limit) {
-        return table.scan(ScanEnhancedRequest.builder().limit(limit).build()).stream()
+        Expression filter =
+                Expression.builder()
+                        .expression("begins_with(pk, :pkPrefix) AND sk = :sk")
+                        .putExpressionValue(":pkPrefix", AttributeValue.fromS(PK_PREFIX))
+                        .putExpressionValue(":sk", AttributeValue.fromS(SK_METADATA))
+                        .build();
+        return table.scan(ScanEnhancedRequest.builder().filterExpression(filter).build()).stream()
                 .flatMap(page -> page.items().stream())
                 .limit(limit)
                 .map(this::toDomain)

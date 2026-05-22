@@ -17,9 +17,11 @@ import com.aubin.pia.infrastructure.persistence.dynamodb.entity.ReportEntity;
 
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @Repository
 public class DynamoDbReportRepository implements ReportRepository {
@@ -43,7 +45,12 @@ public class DynamoDbReportRepository implements ReportRepository {
 
     @Override
     public List<Report> findRecent(int limit) {
-        return table.scan(ScanEnhancedRequest.builder().limit(limit).build()).stream()
+        Expression filter =
+                Expression.builder()
+                        .expression("begins_with(pk, :pkPrefix)")
+                        .putExpressionValue(":pkPrefix", AttributeValue.fromS(PK_PREFIX))
+                        .build();
+        return table.scan(ScanEnhancedRequest.builder().filterExpression(filter).build()).stream()
                 .flatMap(page -> page.items().stream())
                 .limit(limit)
                 .map(this::toDomain)

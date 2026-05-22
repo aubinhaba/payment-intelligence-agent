@@ -94,4 +94,5 @@ terraform/README.md
 scripts/
 Makefile
 terraform/environments/dev/README.md
+/postman
 

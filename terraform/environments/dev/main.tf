@@ -65,9 +65,26 @@ module "ecr" {
 module "sqs" {
   source = "../../modules/sqs"
 
-  environment = "dev"
-  app_name    = "pia"
-  kms_key_id  = module.kms.kms_key_id
+  environment    = "dev"
+  app_name       = "pia"
+  queue_basename = "payment-events"
+  kms_key_id     = module.kms.kms_key_id
+}
+
+# Dedicated queue feeding AnalyzeAndReportUseCase (Claude + report persistence).
+# See docs/adr/0011-async-agent-analysis-via-sqs.md
+module "sqs_anomaly_analysis" {
+  source = "../../modules/sqs"
+
+  environment    = "dev"
+  app_name       = "pia"
+  queue_basename = "anomaly-analysis"
+  kms_key_id     = module.kms.kms_key_id
+
+  # Claude calls can be slow (multi-iteration tool loop); raise the visibility
+  # timeout to avoid duplicate analyses while a message is being processed.
+  visibility_timeout_seconds = var.anomaly_analysis_visibility_timeout_seconds
+  max_receive_count          = var.anomaly_analysis_max_receive_count
 }
 
 # ── DynamoDB ──────────────────────────────────────────────────────────────────
@@ -112,6 +129,11 @@ module "iam" {
   s3_reports_bucket_arn = module.s3.reports_bucket_arn
   ecr_repository_arns   = module.ecr.repository_arns
   ssm_path_prefix       = "/pia/dev"
+
+  extra_sqs_queue_arns = [
+    module.sqs_anomaly_analysis.queue_arn,
+    module.sqs_anomaly_analysis.dlq_arn,
+  ]
 }
 
 # ── CloudWatch ────────────────────────────────────────────────────────────────
@@ -126,6 +148,10 @@ module "cloudwatch" {
   kms_key_id         = module.kms.kms_key_id
   alert_email        = var.alert_email
   dlq_name           = module.sqs.dlq_name
+
+  additional_dlq_names = [
+    module.sqs_anomaly_analysis.dlq_name,
+  ]
 
   claude_error_rate_threshold = 10
   anomaly_min_detection_rate  = 5
@@ -179,6 +205,10 @@ module "pia_core" {
     { name = "AWS_REGION", value = var.aws_region },
     { name = "DYNAMODB_TABLE_NAME", value = module.dynamodb.table_name },
     { name = "SQS_QUEUE_URL", value = module.sqs.queue_url },
+    { name = "PIA_SQS_PAYMENT_EVENTS_QUEUE", value = module.sqs.queue_name },
+    { name = "PIA_SQS_PAYMENT_EVENTS_DLQ", value = module.sqs.dlq_name },
+    { name = "PIA_SQS_ANOMALY_ANALYSIS_QUEUE", value = module.sqs_anomaly_analysis.queue_name },
+    { name = "PIA_SQS_ANOMALY_ANALYSIS_DLQ", value = module.sqs_anomaly_analysis.dlq_name },
     { name = "S3_REPORTS_BUCKET", value = module.s3.reports_bucket_name },
   ]
 

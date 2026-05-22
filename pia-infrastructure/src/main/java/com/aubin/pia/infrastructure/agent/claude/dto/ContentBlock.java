@@ -1,5 +1,6 @@
 package com.aubin.pia.infrastructure.agent.claude.dto;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -9,9 +10,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Represents one block in Claude's message content array. The {@code type} field discriminates
  * between text, tool_use (Claude invoking a tool), and tool_result (our response to a tool call).
+ *
+ * <p>{@code @JsonAutoDetect} suppresses getter/isGetter visibility so that helper methods like
+ * {@code isText()} and {@code isToolUse()} are never serialised as JSON properties — only the
+ * explicitly annotated fields are included in the payload.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonAutoDetect(
+        fieldVisibility = JsonAutoDetect.Visibility.ANY,
+        getterVisibility = JsonAutoDetect.Visibility.NONE,
+        isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 public final class ContentBlock {
 
     @JsonProperty("type")
