@@ -1,74 +1,148 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DatePipe, SlicePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import {
+  CardModule,
+  TableModule,
+  BadgeModule,
+  FormModule,
+  SpinnerModule,
+} from '@coreui/angular';
+import { IconModule } from '@coreui/icons-angular';
 import { ApiService } from '../../core/services/api.service';
 import { Anomaly } from '../../core/models/anomaly.model';
-import { BadgeComponent } from '../../shared/components/badge/badge.component';
+
+type AnomalyType = 'ALL' | 'VELOCITY' | 'AMOUNT' | 'GEO' | 'CARD_TESTING' | 'MCC';
+type SeverityFilter = 'ALL' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+type ThemeColor = 'primary' | 'info' | 'warning' | 'danger' | 'success' | 'secondary';
 
 @Component({
   selector: 'app-anomalies',
   standalone: true,
-  imports: [DatePipe, RouterLink, BadgeComponent],
+  imports: [
+    DatePipe,
+    SlicePipe,
+    RouterLink,
+    FormsModule,
+    CardModule,
+    TableModule,
+    BadgeModule,
+    FormModule,
+    SpinnerModule,
+    IconModule,
+  ],
   template: `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Anomalies</h1>
-        <p>Detected fraud signals requiring review</p>
-      </div>
+    <h1 class="mb-1">Anomalies</h1>
+    <p class="text-body-secondary mb-4">Detected fraud signals requiring review</p>
 
-      @if (loading()) {
-        <div class="loading-state"><span>Loading anomalies…</span></div>
-      } @else if (anomalies().length === 0) {
-        <div class="card empty-state">
-          <span>◎</span>
-          <p>No anomalies detected</p>
+    <c-card class="mb-4">
+      <c-card-header class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+        <div class="small text-body-secondary">
+          <strong class="text-body">{{ filtered().length }}</strong> results
+          @if (filtered().length < anomalies().length && !loading()) {
+            <c-badge color="primary" class="ms-2">
+              filtered from {{ anomalies().length }}
+            </c-badge>
+          }
         </div>
-      } @else {
-        <div class="card table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Transaction</th>
-                <th>Type</th>
-                <th>Severity</th>
-                <th>Description</th>
-                <th>Detected at</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (a of anomalies(); track a.id) {
+        <div class="d-flex gap-2 flex-wrap">
+          <c-input-group sizing="sm" style="width: 240px;">
+            <span cInputGroupText>
+              <svg cIcon name="cilSearch" size="sm"></svg>
+            </span>
+            <input
+              cFormControl
+              type="text"
+              placeholder="Search ID, description…"
+              [(ngModel)]="searchInput"
+              (input)="searchQuery.set(searchInput)"
+            />
+          </c-input-group>
+          <select
+            cSelect
+            sizing="sm"
+            [value]="typeFilter()"
+            (change)="typeFilter.set($any($event.target).value)"
+            style="width: 150px;"
+          >
+            <option value="ALL">All types</option>
+            <option value="VELOCITY">Velocity</option>
+            <option value="AMOUNT">Amount</option>
+            <option value="GEO">Geo</option>
+            <option value="CARD_TESTING">Card Testing</option>
+            <option value="MCC">MCC</option>
+          </select>
+          <select
+            cSelect
+            sizing="sm"
+            [value]="severityFilter()"
+            (change)="severityFilter.set($any($event.target).value)"
+            style="width: 150px;"
+          >
+            <option value="ALL">All severities</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+          </select>
+        </div>
+      </c-card-header>
+
+      <c-card-body class="p-0">
+        @if (loading()) {
+          <div class="d-flex justify-content-center py-5">
+            <c-spinner color="primary" />
+          </div>
+        } @else if (anomalies().length === 0) {
+          <div class="text-center text-body-secondary py-5">
+            <p class="mb-1">No anomalies detected</p>
+            <small>The system is monitoring transactions in real-time</small>
+          </div>
+        } @else if (filtered().length === 0) {
+          <div class="text-center text-body-secondary py-5">
+            <p class="mb-1">No anomalies match your filters</p>
+            <small>Try adjusting the type or severity filter</small>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table cTable hover small class="mb-0 align-middle">
+              <thead>
                 <tr>
-                  <td class="mono">{{ a.id }}</td>
-                  <td>
-                    <a [routerLink]="['/transactions']" class="tx-link mono">
-                      {{ a.transactionId }}
-                    </a>
-                  </td>
-                  <td>
-                    <app-badge [label]="a.type" variant="type" />
-                  </td>
-                  <td>
-                    <app-badge
-                      [label]="a.severity"
-                      [variant]="severityVariant(a.severity)"
-                    />
-                  </td>
-                  <td class="desc-cell">{{ a.description }}</td>
-                  <td class="date-cell">{{ a.detectedAt | date: 'dd MMM, HH:mm' }}</td>
+                  @for (col of columns; track col) {
+                    <th scope="col">{{ col }}</th>
+                  }
                 </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </div>
-  `,
-  styles: `
-    .table-wrap { padding: 0; overflow-x: auto; }
-    .desc-cell  { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .date-cell  { color: var(--color-text-muted); font-size: 0.8rem; white-space: nowrap; }
-    .tx-link    { color: var(--color-accent); text-decoration: none; font-size: 0.8rem; &:hover { text-decoration: underline; } }
+              </thead>
+              <tbody>
+                @for (a of filtered(); track a.id) {
+                  <tr>
+                    <td class="font-monospace small" [title]="a.id">{{ a.id | slice:0:12 }}…</td>
+                    <td>
+                      <a [routerLink]="['/transactions']" class="font-monospace small" [title]="a.transactionId">
+                        {{ a.transactionId | slice:0:12 }}…
+                      </a>
+                    </td>
+                    <td>
+                      <c-badge color="info">{{ a.type }}</c-badge>
+                    </td>
+                    <td>
+                      <c-badge [color]="severityColor(a.severity)">{{ a.severity }}</c-badge>
+                    </td>
+                    <td class="small text-body-secondary text-truncate" style="max-width: 260px;" [title]="a.description">
+                      {{ a.description }}
+                    </td>
+                    <td class="small text-body-secondary text-nowrap font-monospace">
+                      {{ a.detectedAt | date:'dd MMM, HH:mm' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </c-card-body>
+    </c-card>
   `,
 })
 export class AnomaliesComponent implements OnInit {
@@ -76,6 +150,30 @@ export class AnomaliesComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly anomalies = signal<Anomaly[]>([]);
+  readonly searchQuery = signal('');
+  readonly typeFilter = signal<AnomalyType>('ALL');
+  readonly severityFilter = signal<SeverityFilter>('ALL');
+
+  searchInput = '';
+
+  readonly columns = ['ID', 'Transaction', 'Type', 'Severity', 'Description', 'Detected at'];
+
+  readonly filtered = computed(() => {
+    const q = this.searchQuery().toLowerCase().trim();
+    const t = this.typeFilter();
+    const s = this.severityFilter();
+
+    return this.anomalies().filter((a) => {
+      const matchesSearch =
+        !q ||
+        a.id.toLowerCase().includes(q) ||
+        a.transactionId.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q);
+      const matchesType = t === 'ALL' || a.type === t;
+      const matchesSeverity = s === 'ALL' || a.severity === s;
+      return matchesSearch && matchesType && matchesSeverity;
+    });
+  });
 
   ngOnInit(): void {
     this.api.getAnomalies(50).subscribe({
@@ -87,15 +185,13 @@ export class AnomaliesComponent implements OnInit {
     });
   }
 
-  severityVariant(
-    s: string
-  ): 'severity-low' | 'severity-medium' | 'severity-high' | 'severity-critical' {
-    const map: Record<string, 'severity-low' | 'severity-medium' | 'severity-high' | 'severity-critical'> = {
-      LOW: 'severity-low',
-      MEDIUM: 'severity-medium',
-      HIGH: 'severity-high',
-      CRITICAL: 'severity-critical',
+  severityColor(s: string): ThemeColor {
+    const map: Record<string, ThemeColor> = {
+      LOW: 'success',
+      MEDIUM: 'warning',
+      HIGH: 'danger',
+      CRITICAL: 'primary',
     };
-    return map[s] ?? 'severity-low';
+    return map[s] ?? 'secondary';
   }
 }

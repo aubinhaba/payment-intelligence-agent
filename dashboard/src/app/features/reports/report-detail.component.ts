@@ -1,114 +1,119 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, SlicePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  CardModule,
+  BadgeModule,
+  ButtonModule,
+  SpinnerModule,
+} from '@coreui/angular';
+import { IconModule } from '@coreui/icons-angular';
+import { MarkdownComponent } from 'ngx-markdown';
 import { ApiService } from '../../core/services/api.service';
 import { Report } from '../../core/models/report.model';
 
 @Component({
   selector: 'app-report-detail',
   standalone: true,
-  imports: [DatePipe, RouterLink],
+  imports: [
+    DatePipe,
+    SlicePipe,
+    RouterLink,
+    CardModule,
+    BadgeModule,
+    ButtonModule,
+    SpinnerModule,
+    IconModule,
+    MarkdownComponent,
+  ],
   template: `
-    <div class="page-container">
-      <a routerLink="/reports" class="back-link">← Back to reports</a>
+    <a routerLink="/reports" class="d-inline-flex align-items-center gap-1 text-body-secondary text-decoration-none mb-4 small">
+      <svg cIcon name="cilArrowLeft" size="sm"></svg>
+      Back to reports
+    </a>
 
-      @if (loading()) {
-        <div class="loading-state"><span>Loading report…</span></div>
-      } @else if (!report()) {
-        <div class="card empty-state">
-          <span>⚠</span>
-          <p>Report not found</p>
+    @if (loading()) {
+      <div class="d-flex justify-content-center py-5">
+        <c-spinner color="primary" />
+      </div>
+    } @else if (!report()) {
+      <c-card>
+        <c-card-body class="text-center text-body-secondary py-5">
+          <p class="mb-1">Report not found</p>
+          <small>This report may have been deleted or the ID is incorrect</small>
+        </c-card-body>
+      </c-card>
+    } @else {
+      <div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-3">
+        <div>
+          <h1 class="mb-1">Analysis Report</h1>
+          <small class="font-monospace text-primary">{{ report()!.id }}</small>
         </div>
-      } @else {
-        <div class="detail-header">
-          <div>
-            <h1>Report</h1>
-            <span class="report-id mono">{{ report()!.id }}</span>
-          </div>
-          <span class="report-date">Generated {{ report()!.generatedAt | date: 'dd MMM yyyy, HH:mm' }}</span>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <small class="text-body-secondary">
+            Generated {{ report()!.generatedAt | date:'dd MMM yyyy, HH:mm' }}
+          </small>
+          <c-badge color="info">Claude AI</c-badge>
         </div>
+      </div>
 
-        <div class="meta-row">
-          <div class="meta-chip">
-            <span class="meta-label">Transaction</span>
-            <span class="meta-value mono">{{ report()!.transactionId }}</span>
-          </div>
-        </div>
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <c-card class="border-0 bg-body-tertiary">
+          <c-card-body class="py-2 px-3">
+            <div class="text-uppercase text-body-secondary" style="font-size: 0.65rem; letter-spacing: 0.08em;">
+              Transaction
+            </div>
+            <div class="font-monospace small" [title]="report()!.transactionId">
+              {{ report()!.transactionId }}
+            </div>
+          </c-card-body>
+        </c-card>
+        <c-card class="border-0 bg-body-tertiary">
+          <c-card-body class="py-2 px-3">
+            <div class="text-uppercase text-body-secondary" style="font-size: 0.65rem; letter-spacing: 0.08em;">
+              Report ID
+            </div>
+            <div class="font-monospace small">{{ report()!.id | slice:0:16 }}…</div>
+          </c-card-body>
+        </c-card>
+      </div>
 
-        <div class="card summary-card">
-          <h2 class="section-title">Executive Summary</h2>
-          <p class="summary-text">{{ report()!.summary }}</p>
-        </div>
+      <c-card class="mb-3 border-start border-primary border-4">
+        <c-card-header>
+          <span class="text-uppercase fw-semibold text-body-secondary" style="font-size: 0.72rem; letter-spacing: 0.1em;">
+            Executive Summary
+          </span>
+        </c-card-header>
+        <c-card-body>
+          <p class="mb-0">{{ report()!.summary }}</p>
+        </c-card-body>
+      </c-card>
 
-        <div class="card analysis-card">
-          <h2 class="section-title">Full Analysis</h2>
-          <pre class="analysis-pre">{{ bodyText() }}</pre>
-        </div>
-      }
-    </div>
-  `,
-  styles: `
-    .back-link {
-      display: inline-block;
-      color: var(--color-text-secondary);
-      text-decoration: none;
-      font-size: 0.875rem;
-      margin-bottom: 1.5rem;
-      transition: color var(--transition-fast);
-
-      &:hover { color: var(--color-text-primary); }
-    }
-
-    .detail-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1.5rem;
-    }
-
-    .report-id   { font-size: 0.8rem; color: var(--color-accent); font-family: var(--font-mono); }
-    .report-date { font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem; }
-
-    .meta-row {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    .meta-chip {
-      background: var(--color-surface-1);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      padding: 0.5rem 0.875rem;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .meta-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); }
-    .meta-value { font-size: 0.8rem; color: var(--color-text-primary); }
-
-    .section-title {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--color-text-muted);
-      margin-bottom: 1rem;
-    }
-
-    .summary-card { margin-bottom: 1rem; }
-    .summary-text { color: var(--color-text-primary); line-height: 1.7; font-size: 0.9375rem; }
-
-    .analysis-card { margin-bottom: 1rem; }
-    .analysis-pre {
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      line-height: 1.7;
-      color: var(--color-text-secondary);
+      <c-card class="mb-4">
+        <c-card-header class="d-flex justify-content-between align-items-center">
+          <span class="text-uppercase fw-semibold text-body-secondary" style="font-size: 0.72rem; letter-spacing: 0.1em;">
+            Full Analysis
+          </span>
+          <button
+            cButton
+            color="secondary"
+            variant="outline"
+            size="sm"
+            (click)="copyAnalysis()"
+          >
+            @if (copied()) {
+              <svg cIcon name="cilCheckCircle" size="sm" class="me-1"></svg>
+              Copied
+            } @else {
+              <svg cIcon name="cilCopy" size="sm" class="me-1"></svg>
+              Copy
+            }
+          </button>
+        </c-card-header>
+        <c-card-body class="p-3 markdown-body" style="max-height: 600px; overflow: auto;">
+          <markdown [data]="bodyText()" />
+        </c-card-body>
+      </c-card>
     }
   `,
 })
@@ -118,12 +123,8 @@ export class ReportDetailComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly report = signal<Report | null>(null);
+  readonly copied = signal(false);
 
-  /**
-   * Extracts displayable markdown from markdownBody.
-   * Handles legacy reports where Claude wrapped the JSON response in a ```json code fence
-   * instead of returning plain JSON — in that case we extract the `analysis` field.
-   */
   readonly bodyText = computed(() => {
     const body = this.report()?.markdownBody;
     if (!body) return '';
@@ -136,6 +137,15 @@ export class ReportDetailComponent implements OnInit {
     }
     return body;
   });
+
+  copyAnalysis(): void {
+    const text = this.bodyText();
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2000);
+    });
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;

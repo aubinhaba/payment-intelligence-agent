@@ -1,89 +1,131 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DatePipe, SlicePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import {
+  CardModule,
+  TableModule,
+  BadgeModule,
+  FormModule,
+  ButtonModule,
+  SpinnerModule,
+} from '@coreui/angular';
+import { IconModule } from '@coreui/icons-angular';
 import { ApiService } from '../../core/services/api.service';
 import { Transaction } from '../../core/models/transaction.model';
-import { BadgeComponent } from '../../shared/components/badge/badge.component';
+
+type StatusFilter = 'ALL' | 'AUTHORIZED' | 'DECLINED' | 'FLAGGED';
+type StatusColor = 'success' | 'danger' | 'warning' | 'secondary';
 
 @Component({
   selector: 'app-transactions',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, BadgeComponent],
+  imports: [
+    DatePipe,
+    SlicePipe,
+    FormsModule,
+    CardModule,
+    TableModule,
+    BadgeModule,
+    FormModule,
+    ButtonModule,
+    SpinnerModule,
+    IconModule,
+  ],
   template: `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Transactions</h1>
-        <p>{{ transactions().length }} most recent ingested payment events</p>
-      </div>
+    <h1 class="mb-1">Transactions</h1>
+    <p class="text-body-secondary mb-4">Recent ingested payment events</p>
 
-      @if (loading()) {
-        <div class="loading-state"><span>Fetching transactions…</span></div>
-      } @else if (transactions().length === 0) {
-        <div class="card empty-state">
-          <span>◎</span>
-          <p>No transactions yet — start the event simulator</p>
+    <c-card class="mb-4">
+      <c-card-header class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+        <div class="small text-body-secondary">
+          <strong class="text-body">{{ filtered().length }}</strong> results
+          @if (filtered().length < transactions().length && !loading()) {
+            <c-badge color="primary" class="ms-2">
+              filtered from {{ transactions().length }}
+            </c-badge>
+          }
         </div>
-      } @else {
-        <div class="card table-card">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Transaction ID</th>
-                <th>Amount</th>
-                <th>Card</th>
-                <th>Merchant</th>
-                <th>MCC</th>
-                <th>Country</th>
-                <th>Status</th>
-                <th>Timestamp</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (tx of transactions(); track tx.id) {
+        <div class="d-flex gap-2 flex-wrap">
+          <c-input-group sizing="sm" style="width: 240px;">
+            <span cInputGroupText>
+              <svg cIcon name="cilSearch" size="sm"></svg>
+            </span>
+            <input
+              cFormControl
+              type="text"
+              placeholder="Search ID, merchant, country…"
+              [(ngModel)]="searchInput"
+              (input)="searchQuery.set(searchInput)"
+            />
+          </c-input-group>
+          <select
+            cSelect
+            sizing="sm"
+            [value]="statusFilter()"
+            (change)="statusFilter.set($any($event.target).value)"
+            style="width: 150px;"
+          >
+            <option value="ALL">All status</option>
+            <option value="AUTHORIZED">Authorized</option>
+            <option value="DECLINED">Declined</option>
+            <option value="FLAGGED">Flagged</option>
+          </select>
+        </div>
+      </c-card-header>
+
+      <c-card-body class="p-0">
+        @if (loading()) {
+          <div class="d-flex justify-content-center py-5">
+            <c-spinner color="primary" />
+          </div>
+        } @else if (transactions().length === 0) {
+          <div class="text-center text-body-secondary py-5">
+            <p class="mb-1">No transactions yet</p>
+            <small>Start the event simulator to generate payment events</small>
+          </div>
+        } @else if (filtered().length === 0) {
+          <div class="text-center text-body-secondary py-5">
+            <p class="mb-1">No results match your filters</p>
+            <small>Try adjusting your search query or status filter</small>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table cTable hover small class="mb-0 align-middle">
+              <thead>
                 <tr>
-                  <td class="mono id-cell">{{ tx.id }}</td>
-                  <td class="amount-cell mono">
-                    <span class="amount-value">{{ tx.amount }}</span>
-                    <span class="currency-tag">{{ tx.currency }}</span>
-                  </td>
-                  <td class="mono muted">····&nbsp;{{ tx.last4 }}</td>
-                  <td class="mono muted">{{ tx.merchantId }}</td>
-                  <td class="mono muted">{{ tx.mcc }}</td>
-                  <td class="muted">{{ tx.country }}</td>
-                  <td>
-                    <app-badge [label]="tx.status" [variant]="statusVariant(tx.status)" />
-                  </td>
-                  <td class="date-cell">{{ tx.occurredAt | date: 'dd MMM, HH:mm:ss' }}</td>
+                  @for (col of columns; track col) {
+                    <th scope="col">{{ col }}</th>
+                  }
                 </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </div>
-  `,
-  styles: `
-    .table-card { padding: 0; overflow-x: auto; }
-
-    .id-cell   { color: var(--color-text-primary) !important; }
-    .muted     { color: var(--color-text-muted) !important; }
-    .date-cell { color: var(--color-text-muted); font-size: 0.75rem; white-space: nowrap; font-family: var(--font-mono); }
-
-    .amount-cell {
-      display: flex;
-      align-items: baseline;
-      gap: 0.25rem;
-    }
-
-    .amount-value {
-      color: var(--color-text-primary);
-      font-weight: 600;
-    }
-
-    .currency-tag {
-      font-size: 0.65rem;
-      color: var(--color-text-muted);
-      letter-spacing: 0.04em;
-    }
+              </thead>
+              <tbody>
+                @for (tx of filtered(); track tx.id) {
+                  <tr>
+                    <td class="font-monospace small" [title]="tx.id">{{ tx.id | slice:0:12 }}…</td>
+                    <td class="font-monospace">
+                      <strong>{{ tx.amount }}</strong>
+                      <small class="text-body-secondary ms-1">{{ tx.currency }}</small>
+                    </td>
+                    <td class="font-monospace small text-body-secondary">····&nbsp;{{ tx.last4 }}</td>
+                    <td class="font-monospace small text-body-secondary text-truncate" style="max-width: 160px;" [title]="tx.merchantId">
+                      {{ tx.merchantId | slice:0:16 }}
+                    </td>
+                    <td class="font-monospace small text-body-secondary">{{ tx.mcc }}</td>
+                    <td class="small text-body-secondary">{{ tx.country }}</td>
+                    <td>
+                      <c-badge [color]="statusColor(tx.status)">{{ tx.status }}</c-badge>
+                    </td>
+                    <td class="small text-body-secondary text-nowrap font-monospace">
+                      {{ tx.occurredAt | date:'dd MMM, HH:mm:ss' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </c-card-body>
+    </c-card>
   `,
 })
 export class TransactionsComponent implements OnInit {
@@ -91,17 +133,53 @@ export class TransactionsComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly transactions = signal<Transaction[]>([]);
+  readonly searchQuery = signal('');
+  readonly statusFilter = signal<StatusFilter>('ALL');
+
+  searchInput = '';
+
+  readonly columns = [
+    'Transaction ID',
+    'Amount',
+    'Card',
+    'Merchant',
+    'MCC',
+    'Country',
+    'Status',
+    'Timestamp',
+  ];
+
+  readonly filtered = computed(() => {
+    const q = this.searchQuery().toLowerCase().trim();
+    const s = this.statusFilter();
+
+    return this.transactions().filter((tx) => {
+      const matchesSearch =
+        !q ||
+        tx.id.toLowerCase().includes(q) ||
+        tx.merchantId.toLowerCase().includes(q) ||
+        tx.last4.includes(q) ||
+        tx.country.toLowerCase().includes(q) ||
+        tx.mcc.includes(q);
+      const matchesStatus = s === 'ALL' || tx.status === s;
+      return matchesSearch && matchesStatus;
+    });
+  });
 
   ngOnInit(): void {
     this.api.getTransactions(50).subscribe({
-      next: (data) => { this.transactions.set(data); this.loading.set(false); },
+      next: (data) => {
+        this.transactions.set(data);
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false),
     });
   }
 
-  statusVariant(status: string): 'status-authorized' | 'status-declined' | 'status-flagged' {
-    if (status === 'AUTHORIZED') return 'status-authorized';
-    if (status === 'DECLINED')   return 'status-declined';
-    return 'status-flagged';
+  statusColor(status: string): StatusColor {
+    if (status === 'AUTHORIZED') return 'success';
+    if (status === 'DECLINED') return 'danger';
+    if (status === 'FLAGGED') return 'warning';
+    return 'secondary';
   }
 }

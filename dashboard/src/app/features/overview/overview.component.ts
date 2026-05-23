@@ -1,319 +1,256 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { DecimalPipe, DatePipe, SlicePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import {
+  CardModule,
+  GridModule,
+  BadgeModule,
+  ProgressModule,
+  ListGroupModule,
+  WidgetModule,
+  SpinnerModule,
+  SharedModule,
+  ButtonModule,
+} from '@coreui/angular';
+import { IconModule } from '@coreui/icons-angular';
+import { NgChartsModule } from 'ng2-charts';
+import type { ChartConfiguration, ChartData } from 'chart.js';
 import { ApiService } from '../../core/services/api.service';
 import { MetricsSummary } from '../../core/models/metrics.model';
+import { Anomaly } from '../../core/models/anomaly.model';
+import { Report } from '../../core/models/report.model';
+
+type ThemeColor = 'primary' | 'info' | 'warning' | 'danger' | 'success' | 'secondary';
 
 interface KpiCard {
   label: string;
-  value: number;
+  subtitle: string;
+  value: string;
   icon: string;
+  color: ThemeColor;
   route: string;
-  gradient: string;
-  glow: string;
+}
+
+interface SeverityEntry {
+  key: string;
+  value: number;
+  pct: number;
+  color: ThemeColor;
 }
 
 @Component({
   selector: 'app-overview',
   standalone: true,
-  imports: [RouterLink, DecimalPipe],
+  imports: [
+    RouterLink,
+    DecimalPipe,
+    DatePipe,
+    SlicePipe,
+    CardModule,
+    GridModule,
+    BadgeModule,
+    ProgressModule,
+    ListGroupModule,
+    WidgetModule,
+    SpinnerModule,
+    SharedModule,
+    ButtonModule,
+    IconModule,
+    NgChartsModule,
+  ],
   template: `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Overview</h1>
-        <p>Real-time payment fraud analysis — last 1 000 events</p>
+    <!-- Header with refresh action -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-3">
+      <div>
+        <h1 class="mb-1">Overview</h1>
+        <p class="text-body-secondary mb-0">
+          Real-time payment fraud analysis — last 100 events
+        </p>
       </div>
+      <div class="d-flex align-items-center gap-2">
+        <small class="text-body-secondary text-nowrap">
+          Last updated {{ checkedAt() | date:'HH:mm:ss' }}
+        </small>
+        <button
+          cButton
+          color="secondary"
+          variant="outline"
+          size="sm"
+          (click)="refresh()"
+          [disabled]="loading()"
+        >
+          <svg cIcon name="cilReload" size="sm" class="me-1"></svg>
+          Refresh
+        </button>
+      </div>
+    </div>
 
-      @if (loading()) {
-        <div class="loading-state"><span>Fetching metrics…</span></div>
-      } @else if (metrics()) {
-        <div class="kpi-grid">
-          @for (kpi of kpiCards(); track kpi.label) {
-            <a [routerLink]="kpi.route" class="kpi-card" [style.--glow]="kpi.glow">
-              <div class="kpi-card-bg" [style.background]="kpi.gradient"></div>
-              <div class="kpi-icon">{{ kpi.icon }}</div>
-              <div class="kpi-value">{{ kpi.value.toLocaleString() }}</div>
-              <div class="kpi-label">{{ kpi.label }}</div>
-              <span class="kpi-cta">View all →</span>
+    @if (loading()) {
+      <div class="d-flex justify-content-center py-5">
+        <c-spinner color="primary" />
+      </div>
+    } @else if (metrics()) {
+      <!-- KPI row: 1 widget-stat-a with sparkline + 4 widget-stat-f -->
+      <c-row [xs]="1" [sm]="2" [xl]="5" class="g-4 mb-4">
+        <!-- Transactions KPI with sparkline -->
+        <c-col>
+          <a routerLink="/transactions" class="text-decoration-none">
+            <c-widget-stat-a color="primary" [value]="kpiCards()[0].value" [title]="kpiCards()[0].label">
+              <ng-template cTemplateId="widgetChartTemplate">
+                <div class="chart-wrapper position-relative" style="height:50px;margin-top:8px;">
+                  <canvas
+                    baseChart
+                    type="line"
+                    [data]="sparklineData()"
+                    [options]="sparklineOptions"
+                  ></canvas>
+                </div>
+              </ng-template>
+            </c-widget-stat-a>
+          </a>
+        </c-col>
+
+        <!-- 4 remaining KPIs as widget-stat-f -->
+        @for (kpi of kpiCards().slice(1); track kpi.label) {
+          <c-col>
+            <a [routerLink]="kpi.route" class="text-decoration-none">
+              <c-widget-stat-f
+                [color]="kpi.color"
+                [title]="kpi.label"
+                [value]="kpi.value"
+                [footer]="kpi.subtitle"
+              >
+                <ng-template cTemplateId="widgetIconTemplate">
+                  <svg cIcon [name]="kpi.icon" size="xl"></svg>
+                </ng-template>
+              </c-widget-stat-f>
             </a>
-          }
-        </div>
+          </c-col>
+        }
+      </c-row>
 
-        <div class="bottom-grid">
-          <!-- Severity breakdown -->
-          <div class="card severity-card">
-            <div class="card-header">
-              <h2>Anomaly Breakdown</h2>
-              <span class="total-badge">{{ metrics()!.anomalyCount }} total</span>
-            </div>
+      <!-- Recent anomalies + Latest AI insights -->
+      <c-row [xs]="1" [md]="2" class="g-4 mb-4">
+        <c-col>
+          <c-card class="h-100">
+            <c-card-header class="d-flex justify-content-between align-items-center">
+              <span class="fw-semibold">Recent high-risk anomalies</span>
+              <a routerLink="/anomalies" class="small">View all</a>
+            </c-card-header>
+            <c-card-body class="p-0">
+              @if (criticalAnomalies().length === 0) {
+                <div class="text-center text-body-secondary py-4 small">
+                  No high-risk anomalies detected
+                </div>
+              } @else {
+                <ul cListGroup flush class="list-group-flush">
+                  @for (a of criticalAnomalies(); track a.id) {
+                    <li cListGroupItem class="d-flex justify-content-between align-items-center gap-3">
+                      <div class="d-flex flex-column gap-1 min-width-0 flex-grow-1">
+                        <div class="d-flex align-items-center gap-2">
+                          <c-badge [color]="severityColor(a.severity)">{{ a.severity }}</c-badge>
+                          <span class="small fw-semibold font-monospace text-body">{{ a.type }}</span>
+                        </div>
+                        <p class="small text-body-secondary mb-0 text-truncate" [title]="a.description">
+                          {{ a.description }}
+                        </p>
+                      </div>
+                      <small class="text-body-secondary font-monospace flex-shrink-0">
+                        {{ a.detectedAt | date:'HH:mm' }}
+                      </small>
+                    </li>
+                  }
+                </ul>
+              }
+            </c-card-body>
+          </c-card>
+        </c-col>
 
-            <div class="severity-list">
-              @for (entry of severityEntries(); track entry.key) {
-                <div class="severity-item">
-                  <div class="severity-info">
-                    <span class="severity-dot" [style.background]="severityColor(entry.key)"></span>
-                    <span class="severity-name" [style.color]="severityColor(entry.key)">{{ entry.key }}</span>
-                    <span class="severity-pct">{{ entry.pct | number: '1.0-0' }}%</span>
-                  </div>
-                  <div class="bar-track">
-                    <div
-                      class="bar-fill"
-                      [style.width.%]="entry.pct"
-                      [style.background]="severityGradient(entry.key)"
-                    ></div>
-                  </div>
-                  <span class="severity-count">{{ entry.value }}</span>
+        <c-col>
+          <c-card class="h-100">
+            <c-card-header class="d-flex justify-content-between align-items-center">
+              <span class="fw-semibold">Latest AI insights</span>
+              <a routerLink="/reports" class="small">View all</a>
+            </c-card-header>
+            <c-card-body class="p-0">
+              @if (latestReports().length === 0) {
+                <div class="text-center text-body-secondary py-4 small">
+                  No reports yet
+                </div>
+              } @else {
+                <div cListGroup flush class="list-group-flush">
+                  @for (r of latestReports(); track r.id) {
+                    <a
+                      [routerLink]="['/reports', r.id]"
+                      cListGroupItem
+                      class="text-decoration-none"
+                    >
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="d-flex align-items-center gap-2">
+                          <c-badge color="info">AI</c-badge>
+                          <small class="font-monospace text-body-secondary">
+                            {{ r.id | slice:0:14 }}…
+                          </small>
+                        </div>
+                        <small class="text-body-secondary">
+                          {{ r.generatedAt | date:'dd MMM, HH:mm' }}
+                        </small>
+                      </div>
+                      <div class="small text-body text-truncate">{{ r.summary }}</div>
+                    </a>
+                  }
                 </div>
               }
-              @if (severityEntries().length === 0) {
-                <p class="no-data">No anomalies recorded</p>
-              }
-            </div>
-          </div>
+            </c-card-body>
+          </c-card>
+        </c-col>
+      </c-row>
 
-          <!-- Quick nav -->
-          <div class="card quick-nav-card">
-            <div class="card-header">
-              <h2>Quick Actions</h2>
-            </div>
-
-            <div class="quick-nav-list">
-              @for (item of quickLinks; track item.route) {
-                <a [routerLink]="item.route" class="quick-nav-item">
-                  <div class="qn-left">
-                    <span class="qn-icon">{{ item.icon }}</span>
-                    <div class="qn-text">
-                      <span class="qn-label">{{ item.label }}</span>
-                      <span class="qn-desc">{{ item.desc }}</span>
-                    </div>
-                  </div>
-                  <span class="qn-arrow">→</span>
-                </a>
-              }
-            </div>
+      <!-- Anomaly severity breakdown -->
+      <c-card class="mb-4">
+        <c-card-header class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Anomaly breakdown</span>
+          <div class="d-flex gap-2">
+            <c-badge color="primary">{{ metrics()!.anomalyCount | number }} total</c-badge>
+            @if (metrics()!.transactionCount > 0) {
+              <c-badge color="success">
+                {{ anomalyRate() | number:'1.1-1' }}% detection rate
+              </c-badge>
+            }
           </div>
-        </div>
-      }
-    </div>
+        </c-card-header>
+        <c-card-body>
+          @if (severityEntries().length === 0) {
+            <p class="text-center text-body-secondary small mb-0">
+              No anomalies recorded yet
+            </p>
+          } @else {
+            @for (entry of severityEntries(); track entry.key) {
+              <div class="d-flex align-items-center mb-3">
+                <div style="width: 110px;" class="d-flex align-items-center gap-2">
+                  <c-badge [color]="entry.color">{{ entry.key }}</c-badge>
+                </div>
+                <div class="small text-body-secondary font-monospace me-3" style="width: 44px;">
+                  {{ entry.pct | number:'1.0-0' }}%
+                </div>
+                <div class="flex-grow-1">
+                  <c-progress [height]="8">
+                    <c-progress-bar [color]="entry.color" [value]="entry.pct" />
+                  </c-progress>
+                </div>
+                <div class="ms-3 small text-body-secondary font-monospace text-end" style="width: 40px;">
+                  {{ entry.value | number }}
+                </div>
+              </div>
+            }
+          }
+        </c-card-body>
+      </c-card>
+    }
   `,
   styles: `
-    /* KPI grid */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .kpi-card {
-      position: relative;
-      overflow: hidden;
-      border-radius: 14px;
-      border: 1px solid rgba(99, 102, 241, 0.12);
-      padding: 1.5rem;
-      text-decoration: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
-      background: rgba(9, 14, 28, 0.8);
-      transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
-      backdrop-filter: blur(12px);
-
-      &:hover {
-        transform: translateY(-3px);
-        border-color: rgba(99, 102, 241, 0.35);
-        box-shadow: 0 12px 40px -8px var(--glow, rgba(99, 102, 241, 0.3));
-
-        .kpi-cta { opacity: 1; transform: translateX(2px); }
-        .kpi-card-bg { opacity: 0.06; }
-      }
-    }
-
-    .kpi-card-bg {
-      position: absolute;
-      inset: 0;
-      opacity: 0.04;
-      transition: opacity var(--transition-base);
-      pointer-events: none;
-    }
-
-    .kpi-icon {
-      font-size: 1.125rem;
-      color: var(--color-text-secondary);
-      margin-bottom: 0.25rem;
-    }
-
-    .kpi-value {
-      font-size: 2.75rem;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      line-height: 1;
-      background: linear-gradient(135deg, #c7d2fe 0%, #a5f3fc 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.03em;
-    }
-
-    .kpi-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--color-text-secondary);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .kpi-cta {
-      font-size: 0.7rem;
-      color: var(--color-accent);
-      margin-top: 0.75rem;
-      opacity: 0;
-      display: inline-block;
-      transition: opacity var(--transition-fast), transform var(--transition-fast);
-    }
-
-    /* Bottom grid */
-    .bottom-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1.25rem;
-
-      h2 {
-        font-size: 0.8125rem;
-        font-weight: 600;
-        color: var(--color-text-secondary);
-        letter-spacing: 0.04em;
-      }
-    }
-
-    .total-badge {
-      font-size: 0.65rem;
-      font-family: var(--font-mono);
-      background: rgba(99, 102, 241, 0.1);
-      color: var(--color-accent);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      padding: 2px 8px;
-      border-radius: 20px;
-    }
-
-    /* Severity */
-    .severity-list { display: flex; flex-direction: column; gap: 0.875rem; }
-
-    .severity-item {
-      display: grid;
-      grid-template-columns: 140px 1fr 36px;
-      align-items: center;
-      gap: 0.875rem;
-    }
-
-    .severity-info {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .severity-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      box-shadow: 0 0 6px currentColor;
-    }
-
-    .severity-name {
-      font-size: 0.7rem;
-      font-weight: 700;
-      font-family: var(--font-mono);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .severity-pct {
-      font-size: 0.65rem;
-      color: var(--color-text-muted);
-      font-family: var(--font-mono);
-      margin-left: auto;
-    }
-
-    .bar-track {
-      height: 5px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .bar-fill {
-      height: 100%;
-      border-radius: 3px;
-      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .severity-count {
-      font-size: 0.7rem;
-      color: var(--color-text-secondary);
-      font-family: var(--font-mono);
-      text-align: right;
-    }
-
-    .no-data { font-size: 0.8rem; color: var(--color-text-muted); text-align: center; padding: 1rem; }
-
-    /* Quick nav */
-    .quick-nav-list { display: flex; flex-direction: column; gap: 4px; }
-
-    .quick-nav-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 0.875rem;
-      border-radius: 10px;
-      text-decoration: none;
-      transition: background var(--transition-fast);
-      border: 1px solid transparent;
-
-      &:hover {
-        background: rgba(99, 102, 241, 0.06);
-        border-color: rgba(99, 102, 241, 0.12);
-
-        .qn-arrow { color: var(--color-accent); transform: translateX(3px); }
-      }
-    }
-
-    .qn-left { display: flex; align-items: center; gap: 0.75rem; }
-
-    .qn-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: rgba(99, 102, 241, 0.08);
-      border: 1px solid rgba(99, 102, 241, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.875rem;
-      flex-shrink: 0;
-    }
-
-    .qn-text { display: flex; flex-direction: column; gap: 1px; }
-    .qn-label { font-size: 0.8rem; font-weight: 600; color: var(--color-text-primary); }
-    .qn-desc  { font-size: 0.7rem; color: var(--color-text-muted); }
-
-    .qn-arrow {
-      font-size: 0.875rem;
-      color: var(--color-text-muted);
-      transition: color var(--transition-fast), transform var(--transition-fast);
-    }
-
-    @media (max-width: 900px) {
-      .kpi-grid    { grid-template-columns: 1fr 1fr; }
-      .bottom-grid { grid-template-columns: 1fr; }
-    }
+    .min-width-0 { min-width: 0; }
   `,
 })
 export class OverviewComponent implements OnInit {
@@ -321,72 +258,180 @@ export class OverviewComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly metrics = signal<MetricsSummary | null>(null);
+  readonly criticalAnomalies = signal<Anomaly[]>([]);
+  readonly latestReports = signal<Report[]>([]);
   readonly kpiCards = signal<KpiCard[]>([]);
-  readonly severityEntries = signal<{ key: string; value: number; pct: number }[]>([]);
+  readonly severityEntries = signal<SeverityEntry[]>([]);
+  readonly checkedAt = signal(new Date());
+  readonly sparklineData = signal<ChartData<'line'>>({ labels: [], datasets: [] });
 
-  readonly quickLinks = [
-    { label: 'Transactions', desc: 'Browse recent payment events', route: '/transactions', icon: '⇄' },
-    { label: 'Anomalies',    desc: 'Review detected fraud signals', route: '/anomalies',    icon: '⚑' },
-    { label: 'Reports',      desc: 'Read Claude AI analysis',      route: '/reports',       icon: '≡' },
-    { label: 'System Health', desc: 'Check service status',        route: '/health',        icon: '◎' },
-  ];
+  readonly sparklineOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false },
+    },
+    scales: {
+      x: { display: false },
+      y: { display: false },
+    },
+    elements: {
+      point: { radius: 0 },
+      line: { tension: 0.4, borderWidth: 2 },
+    },
+  };
+
+  readonly anomalyRate = computed(() => {
+    const m = this.metrics();
+    if (!m || m.transactionCount === 0) return 0;
+    return (m.anomalyCount / m.transactionCount) * 100;
+  });
 
   ngOnInit(): void {
-    this.api.getMetrics().subscribe({
-      next: (m) => {
-        this.metrics.set(m);
+    this.refresh();
+  }
+
+  refresh(): void {
+    this.loading.set(true);
+    this.checkedAt.set(new Date());
+
+    forkJoin({
+      metrics: this.api.getMetrics(),
+      anomalies: this.api.getAnomalies(20),
+      reports: this.api.getReports(3),
+      transactions: this.api.getTransactions(50),
+    }).subscribe({
+      next: ({ metrics, anomalies, reports, transactions }) => {
+        this.metrics.set(metrics);
+
+        const highRiskCount =
+          (metrics.anomaliesBySeverity['HIGH'] ?? 0) +
+          (metrics.anomaliesBySeverity['CRITICAL'] ?? 0);
+        const avgRisk =
+          metrics.transactionCount > 0
+            ? Math.round((metrics.anomalyCount / metrics.transactionCount) * 100)
+            : 0;
+
         this.kpiCards.set([
           {
-            label: 'Transactions', value: m.transactionCount,
-            icon: '⇄', route: '/transactions',
-            gradient: 'linear-gradient(135deg, #6366f1, #06b6d4)',
-            glow: 'rgba(99, 102, 241, 0.35)',
+            label: 'Transactions',
+            subtitle: 'Total ingested events',
+            value: metrics.transactionCount.toLocaleString(),
+            icon: 'cilTransfer',
+            color: 'primary',
+            route: '/transactions',
           },
           {
-            label: 'Anomalies', value: m.anomalyCount,
-            icon: '⚑', route: '/anomalies',
-            gradient: 'linear-gradient(135deg, #f43f5e, #f59e0b)',
-            glow: 'rgba(244, 63, 94, 0.3)',
+            label: 'Fraud Alerts',
+            subtitle: 'Anomalies detected',
+            value: metrics.anomalyCount.toLocaleString(),
+            icon: 'cilWarning',
+            color: 'warning',
+            route: '/anomalies',
           },
           {
-            label: 'Reports', value: m.reportCount,
-            icon: '≡', route: '/reports',
-            gradient: 'linear-gradient(135deg, #10b981, #06b6d4)',
-            glow: 'rgba(16, 185, 129, 0.3)',
+            label: 'High Risk',
+            subtitle: 'HIGH + CRITICAL signals',
+            value: highRiskCount.toLocaleString(),
+            icon: 'cilShieldAlt',
+            color: 'danger',
+            route: '/anomalies',
+          },
+          {
+            label: 'AI Reports',
+            subtitle: 'Claude analyses generated',
+            value: metrics.reportCount.toLocaleString(),
+            icon: 'cilNotes',
+            color: 'info',
+            route: '/reports',
+          },
+          {
+            label: 'Risk Score',
+            subtitle: 'Anomaly detection rate',
+            value: `${avgRisk}%`,
+            icon: 'cilChartLine',
+            color: 'success',
+            route: '/anomalies',
           },
         ]);
 
-        const total = Object.values(m.anomaliesBySeverity).reduce((a, b) => a + b, 0) || 1;
-        const order = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+        this.criticalAnomalies.set(
+          anomalies
+            .filter((a) => a.severity === 'HIGH' || a.severity === 'CRITICAL')
+            .slice(0, 5)
+        );
+        this.latestReports.set(reports.slice(0, 3));
+
+        const total =
+          Object.values(metrics.anomaliesBySeverity).reduce((a, b) => a + b, 0) || 1;
+        const order: Array<keyof typeof SEVERITY_COLOR> = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
         this.severityEntries.set(
           order
-            .filter((k) => m.anomaliesBySeverity[k] !== undefined)
+            .filter((k) => metrics.anomaliesBySeverity[k] !== undefined)
             .map((k) => ({
               key: k,
-              value: m.anomaliesBySeverity[k],
-              pct: (m.anomaliesBySeverity[k] / total) * 100,
+              value: metrics.anomaliesBySeverity[k],
+              pct: (metrics.anomaliesBySeverity[k] / total) * 100,
+              color: SEVERITY_COLOR[k],
             }))
         );
+
+        this.sparklineData.set(buildSparkline(transactions));
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
   }
 
-  severityColor(key: string): string {
-    const m: Record<string, string> = {
-      LOW: '#10b981', MEDIUM: '#f59e0b', HIGH: '#f43f5e', CRITICAL: '#a855f7',
+  severityColor(s: string): ThemeColor {
+    return SEVERITY_COLOR[s as keyof typeof SEVERITY_COLOR] ?? 'secondary';
+  }
+}
+
+const SEVERITY_COLOR = {
+  LOW: 'success',
+  MEDIUM: 'warning',
+  HIGH: 'danger',
+  CRITICAL: 'primary',
+} as const satisfies Record<string, ThemeColor>;
+
+function buildSparkline(transactions: { occurredAt: string }[]): ChartData<'line'> {
+  const BUCKETS = 12;
+  if (transactions.length === 0) {
+    return {
+      labels: Array(BUCKETS).fill(''),
+      datasets: [
+        {
+          data: Array(BUCKETS).fill(0),
+          borderColor: 'rgba(255,255,255,0.55)',
+          backgroundColor: 'transparent',
+        },
+      ],
     };
-    return m[key] ?? '#3d4d6b';
   }
 
-  severityGradient(key: string): string {
-    const m: Record<string, string> = {
-      LOW:      'linear-gradient(90deg, #10b981, #06b6d4)',
-      MEDIUM:   'linear-gradient(90deg, #f59e0b, #f43f5e)',
-      HIGH:     'linear-gradient(90deg, #f43f5e, #a855f7)',
-      CRITICAL: 'linear-gradient(90deg, #a855f7, #6366f1)',
-    };
-    return m[key] ?? 'var(--color-accent)';
+  const times = transactions
+    .map((t) => new Date(t.occurredAt).getTime())
+    .filter((t) => !isNaN(t));
+  const min = Math.min(...times);
+  const max = Math.max(...times);
+  const span = Math.max(max - min, 1);
+  const buckets = Array<number>(BUCKETS).fill(0);
+  for (const t of times) {
+    const idx = Math.min(BUCKETS - 1, Math.floor(((t - min) / span) * BUCKETS));
+    buckets[idx] += 1;
   }
+
+  return {
+    labels: buckets.map((_, i) => `${i}`),
+    datasets: [
+      {
+        data: buckets,
+        borderColor: 'rgba(255,255,255,0.85)',
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        fill: true,
+      },
+    ],
+  };
 }

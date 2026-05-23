@@ -66,6 +66,8 @@ Desktop.ini
 .env
 .env.*
 !.env.example
+.e2e-config
+!.e2e-config.example
 *.pem
 *.key
 *.p12
