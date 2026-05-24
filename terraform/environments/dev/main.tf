@@ -244,6 +244,7 @@ module "pia_simulator" {
     { name = "SPRING_PROFILES_ACTIVE", value = "dev" },
     { name = "AWS_REGION", value = var.aws_region },
     { name = "SQS_QUEUE_URL", value = module.sqs.queue_url },
+    { name = "PIA_SIMULATOR_INTERVAL_MS", value = tostring(var.simulator_interval_ms) },
   ]
 }
 

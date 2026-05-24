@@ -51,7 +51,7 @@ pia:
     anomaly-analysis-queue: ${PIA_SQS_ANOMALY_ANALYSIS_QUEUE:anomaly-analysis-queue}
     anomaly-analysis-dlq: ${PIA_SQS_ANOMALY_ANALYSIS_DLQ:anomaly-analysis-dlq}
   agent:
-    trigger-min-severity: HIGH
+    trigger-min-severity: CRITICAL
   s3:
     reports-bucket: ${S3_REPORTS_BUCKET:pia-reports}
   ssm:

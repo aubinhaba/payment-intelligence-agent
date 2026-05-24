@@ -8,4 +8,4 @@ spring:
 pia:
   simulator:
     queue-name: payment-events-queue
-    interval-ms: 5000
+    interval-ms: ${PIA_SIMULATOR_INTERVAL_MS:60000}
