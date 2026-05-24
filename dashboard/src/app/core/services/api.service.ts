@@ -5,21 +5,22 @@ import { Transaction } from '../models/transaction.model';
 import { Anomaly } from '../models/anomaly.model';
 import { Report } from '../models/report.model';
 import { MetricsSummary } from '../models/metrics.model';
+import { PagedResponse } from '../models/page.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api';
 
-  getTransactions(limit = 50): Observable<Transaction[]> {
-    return this.http.get<Transaction[]>(`${this.base}/transactions`, {
-      params: { limit },
+  getTransactions(page = 0, size = 20): Observable<PagedResponse<Transaction>> {
+    return this.http.get<PagedResponse<Transaction>>(`${this.base}/transactions`, {
+      params: { page, size },
     });
   }
 
-  getAnomalies(limit = 50): Observable<Anomaly[]> {
-    return this.http.get<Anomaly[]>(`${this.base}/anomalies`, {
-      params: { limit },
+  getAnomalies(page = 0, size = 20): Observable<PagedResponse<Anomaly>> {
+    return this.http.get<PagedResponse<Anomaly>>(`${this.base}/anomalies`, {
+      params: { page, size },
     });
   }
 

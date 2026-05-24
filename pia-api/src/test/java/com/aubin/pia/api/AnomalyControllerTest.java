@@ -29,24 +29,36 @@ class AnomalyControllerTest {
     @MockitoBean FindAnomaliesUseCase findAnomaliesUseCase;
 
     @Test
-    void get_anomalies_returns_200_with_list() throws Exception {
-        when(findAnomaliesUseCase.findRecent(20)).thenReturn(List.of(sampleAnomaly()));
+    void get_anomalies_returns_200_with_paged_content() throws Exception {
+        when(findAnomaliesUseCase.findPaged(0, 20)).thenReturn(List.of(sampleAnomaly()));
 
         mockMvc.perform(get("/api/anomalies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("an_001"))
-                .andExpect(jsonPath("$[0].transactionId").value("tx_001"))
-                .andExpect(jsonPath("$[0].type").value("VELOCITY"))
-                .andExpect(jsonPath("$[0].severity").value("HIGH"));
+                .andExpect(jsonPath("$.content[0].id").value("an_001"))
+                .andExpect(jsonPath("$.content[0].transactionId").value("tx_001"))
+                .andExpect(jsonPath("$.content[0].type").value("VELOCITY"))
+                .andExpect(jsonPath("$.content[0].severity").value("HIGH"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20));
     }
 
     @Test
-    void get_anomalies_returns_empty_list_when_none() throws Exception {
-        when(findAnomaliesUseCase.findRecent(20)).thenReturn(List.of());
+    void get_anomalies_returns_empty_content_when_none() throws Exception {
+        when(findAnomaliesUseCase.findPaged(0, 20)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/anomalies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.content").isEmpty());
+    }
+
+    @Test
+    void get_anomalies_respects_page_and_size_params() throws Exception {
+        when(findAnomaliesUseCase.findPaged(2, 5)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/anomalies").param("page", "2").param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.size").value(5));
     }
 
     private Anomaly sampleAnomaly() {

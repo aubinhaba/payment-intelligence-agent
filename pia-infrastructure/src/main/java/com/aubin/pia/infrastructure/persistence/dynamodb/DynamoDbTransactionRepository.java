@@ -79,6 +79,11 @@ public class DynamoDbTransactionRepository implements TransactionRepository {
 
     @Override
     public List<Transaction> findRecent(int limit) {
+        return findPaged(0, limit);
+    }
+
+    @Override
+    public List<Transaction> findPaged(int page, int size) {
         Expression filter =
                 Expression.builder()
                         .expression("begins_with(pk, :pkPrefix) AND sk = :sk")
@@ -86,8 +91,9 @@ public class DynamoDbTransactionRepository implements TransactionRepository {
                         .putExpressionValue(":sk", AttributeValue.fromS(SK_METADATA))
                         .build();
         return table.scan(ScanEnhancedRequest.builder().filterExpression(filter).build()).stream()
-                .flatMap(page -> page.items().stream())
-                .limit(limit)
+                .flatMap(p -> p.items().stream())
+                .skip((long) page * size)
+                .limit(size)
                 .map(this::toDomain)
                 .collect(Collectors.toList());
     }

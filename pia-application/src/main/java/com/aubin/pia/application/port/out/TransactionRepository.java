@@ -16,4 +16,6 @@ public interface TransactionRepository {
     List<Transaction> findByMerchantId(String merchantId, int windowHours);
 
     List<Transaction> findRecent(int limit);
+
+    List<Transaction> findPaged(int page, int size);
 }

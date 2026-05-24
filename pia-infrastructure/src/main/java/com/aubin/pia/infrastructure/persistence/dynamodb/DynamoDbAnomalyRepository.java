@@ -63,14 +63,20 @@ public class DynamoDbAnomalyRepository implements AnomalyRepository {
 
     @Override
     public List<Anomaly> findRecent(int limit) {
+        return findPaged(0, limit);
+    }
+
+    @Override
+    public List<Anomaly> findPaged(int page, int size) {
         Expression filter =
                 Expression.builder()
                         .expression("begins_with(sk, :skPrefix)")
                         .putExpressionValue(":skPrefix", AttributeValue.fromS(SK_ANOMALY_PREFIX))
                         .build();
         return table.scan(ScanEnhancedRequest.builder().filterExpression(filter).build()).stream()
-                .flatMap(page -> page.items().stream())
-                .limit(limit)
+                .flatMap(p -> p.items().stream())
+                .skip((long) page * size)
+                .limit(size)
                 .map(this::toDomain)
                 .collect(Collectors.toList());
     }

@@ -32,32 +32,37 @@ class TransactionControllerTest {
     @MockitoBean FindTransactionsUseCase findTransactionsUseCase;
 
     @Test
-    void get_transactions_returns_200_with_list() throws Exception {
-        when(findTransactionsUseCase.findRecent(20)).thenReturn(List.of(sampleTransaction()));
+    void get_transactions_returns_200_with_paged_content() throws Exception {
+        when(findTransactionsUseCase.findPaged(0, 20)).thenReturn(List.of(sampleTransaction()));
 
         mockMvc.perform(get("/api/transactions"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("tx_001"))
-                .andExpect(jsonPath("$[0].amount").value("150.00"))
-                .andExpect(jsonPath("$[0].currency").value("EUR"))
-                .andExpect(jsonPath("$[0].merchantId").value("m_001"))
-                .andExpect(jsonPath("$[0].status").value("AUTHORIZED"));
+                .andExpect(jsonPath("$.content[0].id").value("tx_001"))
+                .andExpect(jsonPath("$.content[0].amount").value("150.00"))
+                .andExpect(jsonPath("$.content[0].currency").value("EUR"))
+                .andExpect(jsonPath("$.content[0].merchantId").value("m_001"))
+                .andExpect(jsonPath("$.content[0].status").value("AUTHORIZED"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20));
     }
 
     @Test
-    void get_transactions_returns_empty_list_when_none() throws Exception {
-        when(findTransactionsUseCase.findRecent(20)).thenReturn(List.of());
+    void get_transactions_returns_empty_content_when_none() throws Exception {
+        when(findTransactionsUseCase.findPaged(0, 20)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/transactions"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.content").isEmpty());
     }
 
     @Test
-    void get_transactions_respects_limit_param() throws Exception {
-        when(findTransactionsUseCase.findRecent(5)).thenReturn(List.of());
+    void get_transactions_respects_page_and_size_params() throws Exception {
+        when(findTransactionsUseCase.findPaged(1, 10)).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/transactions").param("limit", "5")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/transactions").param("page", "1").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(10));
     }
 
     private Transaction sampleTransaction() {

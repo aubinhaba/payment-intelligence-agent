@@ -14,4 +14,6 @@ public interface AnomalyRepository {
     List<Anomaly> findSimilar(AnomalyType type, int limit);
 
     List<Anomaly> findRecent(int limit);
+
+    List<Anomaly> findPaged(int page, int size);
 }

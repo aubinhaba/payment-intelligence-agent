@@ -16,4 +16,8 @@ public class FindTransactionsUseCase {
     public List<Transaction> findRecent(int limit) {
         return transactionRepository.findRecent(limit);
     }
+
+    public List<Transaction> findPaged(int page, int size) {
+        return transactionRepository.findPaged(page, size);
+    }
 }

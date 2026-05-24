@@ -7,6 +7,7 @@ import {
   TableModule,
   BadgeModule,
   FormModule,
+  ButtonModule,
   SpinnerModule,
 } from '@coreui/angular';
 import { IconModule } from '@coreui/icons-angular';
@@ -16,6 +17,8 @@ import { Anomaly } from '../../core/models/anomaly.model';
 type AnomalyType = 'ALL' | 'VELOCITY' | 'AMOUNT' | 'GEO' | 'CARD_TESTING' | 'MCC';
 type SeverityFilter = 'ALL' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 type ThemeColor = 'primary' | 'info' | 'warning' | 'danger' | 'success' | 'secondary';
+
+const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-anomalies',
@@ -29,6 +32,7 @@ type ThemeColor = 'primary' | 'info' | 'warning' | 'danger' | 'success' | 'secon
     TableModule,
     BadgeModule,
     FormModule,
+    ButtonModule,
     SpinnerModule,
     IconModule,
   ],
@@ -142,6 +146,37 @@ type ThemeColor = 'primary' | 'info' | 'warning' | 'danger' | 'success' | 'secon
           </div>
         }
       </c-card-body>
+
+      @if (!loading() && anomalies().length > 0) {
+        <c-card-footer class="d-flex align-items-center justify-content-between py-2">
+          <small class="text-body-secondary">
+            Page <strong>{{ page() + 1 }}</strong>
+            &nbsp;·&nbsp; {{ anomalies().length }} items
+          </small>
+          <div class="d-flex gap-2">
+            <button
+              cButton
+              color="secondary"
+              size="sm"
+              variant="outline"
+              [disabled]="page() === 0"
+              (click)="prevPage()"
+            >
+              ← Prev
+            </button>
+            <button
+              cButton
+              color="secondary"
+              size="sm"
+              variant="outline"
+              [disabled]="!hasMore()"
+              (click)="nextPage()"
+            >
+              Next →
+            </button>
+          </div>
+        </c-card-footer>
+      }
     </c-card>
   `,
 })
@@ -150,6 +185,8 @@ export class AnomaliesComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly anomalies = signal<Anomaly[]>([]);
+  readonly page = signal(0);
+  readonly hasMore = signal(false);
   readonly searchQuery = signal('');
   readonly typeFilter = signal<AnomalyType>('ALL');
   readonly severityFilter = signal<SeverityFilter>('ALL');
@@ -176,9 +213,24 @@ export class AnomaliesComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.api.getAnomalies(50).subscribe({
-      next: (data) => {
-        this.anomalies.set(data);
+    this.loadPage(0);
+  }
+
+  prevPage(): void {
+    if (this.page() > 0) this.loadPage(this.page() - 1);
+  }
+
+  nextPage(): void {
+    if (this.hasMore()) this.loadPage(this.page() + 1);
+  }
+
+  private loadPage(page: number): void {
+    this.loading.set(true);
+    this.api.getAnomalies(page, PAGE_SIZE).subscribe({
+      next: (resp) => {
+        this.anomalies.set(resp.content);
+        this.hasMore.set(resp.content.length === PAGE_SIZE);
+        this.page.set(page);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),

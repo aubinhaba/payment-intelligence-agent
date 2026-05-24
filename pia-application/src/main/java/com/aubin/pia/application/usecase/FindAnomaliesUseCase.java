@@ -16,4 +16,8 @@ public class FindAnomaliesUseCase {
     public List<Anomaly> findRecent(int limit) {
         return anomalyRepository.findRecent(limit);
     }
+
+    public List<Anomaly> findPaged(int page, int size) {
+        return anomalyRepository.findPaged(page, size);
+    }
 }

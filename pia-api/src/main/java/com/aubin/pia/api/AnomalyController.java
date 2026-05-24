@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.aubin.pia.api.dto.AnomalyResponse;
+import com.aubin.pia.api.dto.PagedResponse;
 import com.aubin.pia.application.usecase.FindAnomaliesUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,13 +27,18 @@ public class AnomalyController {
     }
 
     @Operation(
-            summary = "List recent anomalies",
-            description = "Returns up to `limit` most recently detected anomalies.")
+            summary = "List anomalies (paginated)",
+            description = "Returns a page of anomalies. page is 0-based, size capped at 100.")
     @GetMapping
-    public ResponseEntity<List<AnomalyResponse>> findRecent(
-            @RequestParam(defaultValue = "20") int limit) {
-        List<AnomalyResponse> body =
-                findAnomaliesUseCase.findRecent(limit).stream().map(AnomalyResponse::from).toList();
-        return ResponseEntity.ok(body);
+    public ResponseEntity<PagedResponse<AnomalyResponse>> findPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(100, Math.max(1, size));
+        List<AnomalyResponse> content =
+                findAnomaliesUseCase.findPaged(safePage, safeSize).stream()
+                        .map(AnomalyResponse::from)
+                        .toList();
+        return ResponseEntity.ok(PagedResponse.of(content, safePage, safeSize));
     }
 }

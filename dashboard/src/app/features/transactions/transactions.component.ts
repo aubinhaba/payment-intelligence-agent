@@ -16,6 +16,8 @@ import { Transaction } from '../../core/models/transaction.model';
 type StatusFilter = 'ALL' | 'AUTHORIZED' | 'DECLINED' | 'FLAGGED';
 type StatusColor = 'success' | 'danger' | 'warning' | 'secondary';
 
+const PAGE_SIZE = 20;
+
 @Component({
   selector: 'app-transactions',
   standalone: true,
@@ -125,6 +127,37 @@ type StatusColor = 'success' | 'danger' | 'warning' | 'secondary';
           </div>
         }
       </c-card-body>
+
+      @if (!loading() && transactions().length > 0) {
+        <c-card-footer class="d-flex align-items-center justify-content-between py-2">
+          <small class="text-body-secondary">
+            Page <strong>{{ page() + 1 }}</strong>
+            &nbsp;·&nbsp; {{ transactions().length }} items
+          </small>
+          <div class="d-flex gap-2">
+            <button
+              cButton
+              color="secondary"
+              size="sm"
+              variant="outline"
+              [disabled]="page() === 0"
+              (click)="prevPage()"
+            >
+              ← Prev
+            </button>
+            <button
+              cButton
+              color="secondary"
+              size="sm"
+              variant="outline"
+              [disabled]="!hasMore()"
+              (click)="nextPage()"
+            >
+              Next →
+            </button>
+          </div>
+        </c-card-footer>
+      }
     </c-card>
   `,
 })
@@ -133,6 +166,8 @@ export class TransactionsComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly transactions = signal<Transaction[]>([]);
+  readonly page = signal(0);
+  readonly hasMore = signal(false);
   readonly searchQuery = signal('');
   readonly statusFilter = signal<StatusFilter>('ALL');
 
@@ -167,9 +202,24 @@ export class TransactionsComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.api.getTransactions(50).subscribe({
-      next: (data) => {
-        this.transactions.set(data);
+    this.loadPage(0);
+  }
+
+  prevPage(): void {
+    if (this.page() > 0) this.loadPage(this.page() - 1);
+  }
+
+  nextPage(): void {
+    if (this.hasMore()) this.loadPage(this.page() + 1);
+  }
+
+  private loadPage(page: number): void {
+    this.loading.set(true);
+    this.api.getTransactions(page, PAGE_SIZE).subscribe({
+      next: (resp) => {
+        this.transactions.set(resp.content);
+        this.hasMore.set(resp.content.length === PAGE_SIZE);
+        this.page.set(page);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),

@@ -142,9 +142,9 @@ export class MainLayoutComponent implements OnInit {
   readonly alertCount = signal(0);
 
   ngOnInit(): void {
-    this.api.getAnomalies(100).subscribe({
-      next: (anomalies) => {
-        const count = anomalies.filter(
+    this.api.getAnomalies(0, 100).subscribe({
+      next: (resp) => {
+        const count = resp.content.filter(
           (a) => a.severity === 'HIGH' || a.severity === 'CRITICAL'
         ).length;
         this.alertCount.set(count);

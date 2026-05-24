@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.aubin.pia.api.dto.PagedResponse;
 import com.aubin.pia.api.dto.TransactionResponse;
 import com.aubin.pia.application.usecase.FindTransactionsUseCase;
 
@@ -26,15 +27,20 @@ public class TransactionController {
     }
 
     @Operation(
-            summary = "List recent transactions",
-            description = "Returns up to `limit` most recently ingested transactions.")
+            summary = "List transactions (paginated)",
+            description =
+                    "Returns a page of transactions ordered by scan order. page is 0-based, size"
+                            + " capped at 100.")
     @GetMapping
-    public ResponseEntity<List<TransactionResponse>> findRecent(
-            @RequestParam(defaultValue = "20") int limit) {
-        List<TransactionResponse> body =
-                findTransactionsUseCase.findRecent(limit).stream()
+    public ResponseEntity<PagedResponse<TransactionResponse>> findPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(100, Math.max(1, size));
+        List<TransactionResponse> content =
+                findTransactionsUseCase.findPaged(safePage, safeSize).stream()
                         .map(TransactionResponse::from)
                         .toList();
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(PagedResponse.of(content, safePage, safeSize));
     }
 }

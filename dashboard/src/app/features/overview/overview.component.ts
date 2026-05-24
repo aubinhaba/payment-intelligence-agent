@@ -298,9 +298,9 @@ export class OverviewComponent implements OnInit {
 
     forkJoin({
       metrics: this.api.getMetrics(),
-      anomalies: this.api.getAnomalies(20),
+      anomalies: this.api.getAnomalies(0, 20),
       reports: this.api.getReports(3),
-      transactions: this.api.getTransactions(50),
+      transactions: this.api.getTransactions(0, 50),
     }).subscribe({
       next: ({ metrics, anomalies, reports, transactions }) => {
         this.metrics.set(metrics);
@@ -357,7 +357,7 @@ export class OverviewComponent implements OnInit {
         ]);
 
         this.criticalAnomalies.set(
-          anomalies
+          anomalies.content
             .filter((a) => a.severity === 'HIGH' || a.severity === 'CRITICAL')
             .slice(0, 5)
         );
@@ -377,7 +377,7 @@ export class OverviewComponent implements OnInit {
             }))
         );
 
-        this.sparklineData.set(buildSparkline(transactions));
+        this.sparklineData.set(buildSparkline(transactions.content));
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
