@@ -35,8 +35,12 @@ public class AwsInfraConfig {
 
     @Bean
     public SqsMessageListenerContainerFactory<Object> defaultSqsListenerContainerFactory(
-            SqsAsyncClient sqsAsyncClient) {
+            SqsAsyncClient sqsAsyncClient,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
         SqsMessagingMessageConverter converter = new SqsMessagingMessageConverter();
+        // Use the application ObjectMapper (JavaTimeModule registered) for correct Instant
+        // handling.
+        converter.setObjectMapper(objectMapper);
         // Ignore the JavaType MessageAttribute set by the simulator. When the mapper returns null,
         // Spring Cloud AWS falls back to the @SqsListener method's parameter type via context.
         converter.setPayloadTypeMapper(msg -> null);
