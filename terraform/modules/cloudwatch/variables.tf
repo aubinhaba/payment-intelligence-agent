@@ -9,6 +9,11 @@ variable "app_name" {
   default     = "pia"
 }
 
+variable "aws_region" {
+  description = "AWS region for CloudWatch dashboard widgets"
+  type        = string
+}
+
 variable "metrics_namespace" {
   description = "CloudWatch custom metrics namespace"
   type        = string

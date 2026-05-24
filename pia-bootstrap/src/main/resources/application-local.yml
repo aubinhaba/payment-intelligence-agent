@@ -21,10 +21,16 @@ pia:
       endpoint: http://localhost:4566
   claude:
     api-key: local-placeholder-key   # safe value for local dev; real key loaded from LocalStack SSM
+  agent:
+    enabled: false
 
 management:
   tracing:
     enabled: false   # no OTLP collector running locally
+  otlp:
+    tracing:
+      export:
+        enabled: false
   endpoints:
     web:
       exposure:

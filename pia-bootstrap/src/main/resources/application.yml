@@ -44,16 +44,16 @@ pia:
     cors:
       allowed-origins: http://localhost:4200
   dynamodb:
-    table-name: pia-table
+    table-name: ${DYNAMODB_TABLE_NAME:pia-table}
   sqs:
-    payment-events-queue: payment-events-queue
-    payment-events-dlq: payment-events-dlq
-    anomaly-analysis-queue: anomaly-analysis-queue
-    anomaly-analysis-dlq: anomaly-analysis-dlq
+    payment-events-queue: ${PIA_SQS_PAYMENT_EVENTS_QUEUE:payment-events-queue}
+    payment-events-dlq: ${PIA_SQS_PAYMENT_EVENTS_DLQ:payment-events-dlq}
+    anomaly-analysis-queue: ${PIA_SQS_ANOMALY_ANALYSIS_QUEUE:anomaly-analysis-queue}
+    anomaly-analysis-dlq: ${PIA_SQS_ANOMALY_ANALYSIS_DLQ:anomaly-analysis-dlq}
   agent:
     trigger-min-severity: HIGH
   s3:
-    reports-bucket: pia-reports
+    reports-bucket: ${S3_REPORTS_BUCKET:pia-reports}
   ssm:
     claude-api-key-path: /pia/claude/api-key
   outbox:

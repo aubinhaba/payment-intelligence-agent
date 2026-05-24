@@ -34,6 +34,7 @@ public class SqsPaymentEventListener {
     private final TransactionRepository transactionRepository;
     private final MetricsPublisher metricsPublisher;
     private final Severity triggerMinSeverity;
+    private final boolean agentEnabled;
 
     public SqsPaymentEventListener(
             IngestTransactionUseCase ingestTransactionUseCase,
@@ -41,13 +42,15 @@ public class SqsPaymentEventListener {
             AnalysisRequestPublisher analysisRequestPublisher,
             TransactionRepository transactionRepository,
             MetricsPublisher metricsPublisher,
-            @Value("${pia.agent.trigger-min-severity:HIGH}") Severity triggerMinSeverity) {
+            @Value("${pia.agent.trigger-min-severity:HIGH}") Severity triggerMinSeverity,
+            @Value("${pia.agent.enabled:true}") boolean agentEnabled) {
         this.ingestTransactionUseCase = ingestTransactionUseCase;
         this.detectAnomaliesUseCase = detectAnomaliesUseCase;
         this.analysisRequestPublisher = analysisRequestPublisher;
         this.transactionRepository = transactionRepository;
         this.metricsPublisher = metricsPublisher;
         this.triggerMinSeverity = triggerMinSeverity;
+        this.agentEnabled = agentEnabled;
     }
 
     @SqsListener("${pia.sqs.payment-events-queue}")
@@ -93,7 +96,7 @@ public class SqsPaymentEventListener {
         }
         log.info("event.anomalies transactionId={} count={}", txId.value(), anomalies.size());
 
-        if (shouldTriggerAgent(anomalies)) {
+        if (agentEnabled && shouldTriggerAgent(anomalies)) {
             analysisRequestPublisher.publish(txId);
         }
     }

@@ -27,3 +27,15 @@ variable "anomaly_analysis_max_receive_count" {
   type        = number
   default     = 2
 }
+
+variable "agent_enabled" {
+  description = "Enable Claude agent analysis. Set to true only when testing the AI pipeline to avoid consuming API tokens."
+  type        = bool
+  default     = false
+}
+
+variable "simulator_desired_count" {
+  description = "Number of pia-simulator ECS tasks to run. Set to 1 to generate continuous payment events, 0 to stop."
+  type        = number
+  default     = 0
+}

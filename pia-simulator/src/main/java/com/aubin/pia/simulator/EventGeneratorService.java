@@ -40,7 +40,7 @@ public class EventGeneratorService {
         this.queueName = queueName;
     }
 
-    @Scheduled(fixedDelayString = "${pia.simulator.interval-ms:1000}")
+    @Scheduled(fixedDelayString = "${pia.simulator.interval-ms:5000}")
     public void generateEvent() {
         PaymentEventDto event = pickScenario();
         sqsTemplate.send(queueName, event);

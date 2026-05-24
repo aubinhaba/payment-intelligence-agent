@@ -143,6 +143,7 @@ module "cloudwatch" {
 
   environment        = "dev"
   app_name           = "pia"
+  aws_region         = var.aws_region
   metrics_namespace  = "PIA"
   log_retention_days = 7
   kms_key_id         = module.kms.kms_key_id
@@ -210,6 +211,7 @@ module "pia_core" {
     { name = "PIA_SQS_ANOMALY_ANALYSIS_QUEUE", value = module.sqs_anomaly_analysis.queue_name },
     { name = "PIA_SQS_ANOMALY_ANALYSIS_DLQ", value = module.sqs_anomaly_analysis.dlq_name },
     { name = "S3_REPORTS_BUCKET", value = module.s3.reports_bucket_name },
+    { name = "PIA_AGENT_ENABLED", value = tostring(var.agent_enabled) },
   ]
 
   secrets = [
@@ -234,7 +236,7 @@ module "pia_simulator" {
   task_role_arn      = module.iam.task_role_arn
   private_subnet_ids = module.networking.private_subnet_ids
   security_group_id  = module.networking.sg_ecs_simulator_id
-  desired_count      = 0
+  desired_count      = var.simulator_desired_count
   log_group_name     = "/pia/dev/app"
   region             = var.aws_region
 

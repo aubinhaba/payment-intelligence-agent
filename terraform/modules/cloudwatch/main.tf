@@ -44,7 +44,7 @@ resource "aws_cloudwatch_log_metric_filter" "app_errors" {
 resource "aws_cloudwatch_log_metric_filter" "pan_exposure" {
   name           = "${local.prefix}-pan-exposure"
   log_group_name = aws_cloudwatch_log_group.app.name
-  pattern        = "[time, request_id, level, logger, message=*PAN* | message=*card_number*]"
+  pattern        = "[time, request_id, level, logger, message=*PAN*]"
 
   metric_transformation {
     name      = "pia.security.pan.exposure"
@@ -88,6 +88,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title  = "Transactions Ingested"
+          region = var.aws_region
           view   = "timeSeries"
           stat   = "Sum"
           period = 300
@@ -104,6 +105,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title  = "Anomalies Detected"
+          region = var.aws_region
           view   = "timeSeries"
           stat   = "Sum"
           period = 300
@@ -120,6 +122,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title  = "Claude Agent Latency (ms)"
+          region = var.aws_region
           view   = "timeSeries"
           stat   = "p99"
           period = 300
@@ -136,6 +139,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title  = "Claude API Errors"
+          region = var.aws_region
           view   = "timeSeries"
           stat   = "Sum"
           period = 300
@@ -152,6 +156,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title  = "Claude Tokens Used"
+          region = var.aws_region
           view   = "timeSeries"
           stat   = "Sum"
           period = 300
@@ -169,6 +174,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title  = "SQS Messages Consumed"
+          region = var.aws_region
           view   = "timeSeries"
           stat   = "Sum"
           period = 300
