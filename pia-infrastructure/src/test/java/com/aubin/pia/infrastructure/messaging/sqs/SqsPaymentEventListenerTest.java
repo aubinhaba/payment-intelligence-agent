@@ -55,7 +55,8 @@ class SqsPaymentEventListenerTest {
                         analysisRequestPublisher,
                         transactionRepository,
                         metricsPublisher,
-                        Severity.HIGH);
+                        Severity.HIGH,
+                        true);
     }
 
     @Test
