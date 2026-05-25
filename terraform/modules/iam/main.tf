@@ -129,6 +129,18 @@ data "aws_iam_policy_document" "task" {
     resources = ["*"]
   }
 
+  # KMS — decrypt SQS messages and SSM SecureString parameters at runtime
+  statement {
+    sid    = "KMSDecryptRuntime"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey",
+      "kms:DescribeKey",
+    ]
+    resources = [var.kms_key_arn]
+  }
+
   # ECS Exec — enable interactive debugging in dev
   statement {
     sid    = "ECSExec"

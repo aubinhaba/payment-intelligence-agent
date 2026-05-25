@@ -31,7 +31,7 @@ public class SsmPropertySourceLoader implements EnvironmentPostProcessor {
     private static final Logger log = LoggerFactory.getLogger(SsmPropertySourceLoader.class);
 
     private static final String PROPERTY_SOURCE_NAME = "ssm-secrets";
-    private static final String DEFAULT_KEY_PATH = "/pia/claude/api-key";
+    private static final String DEFAULT_KEY_PATH = "/pia/dev/claude/api-key";
     private static final String DEFAULT_REGION = "eu-west-1";
 
     @Override

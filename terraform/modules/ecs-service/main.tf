@@ -88,7 +88,7 @@ resource "aws_ecs_service" "service" {
   lifecycle {
     # Prevent Terraform from resetting task definition on every apply
     # (CI/CD manages image tag updates via aws ecs update-service)
-    ignore_changes = [task_definition, desired_count]
+    ignore_changes = [task_definition]
   }
 
   tags = {

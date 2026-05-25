@@ -4,8 +4,12 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:eu-west-1}
 
 pia:
   simulator:
-    queue-name: payment-events-queue
+    queue-name: ${PIA_SQS_PAYMENT_EVENTS_QUEUE:payment-events-queue}
     interval-ms: ${PIA_SIMULATOR_INTERVAL_MS:60000}

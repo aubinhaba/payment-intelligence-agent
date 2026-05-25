@@ -52,3 +52,13 @@ output "ecs_cluster_name" {
   description = "ECS cluster name"
   value       = module.ecs_cluster.cluster_name
 }
+
+output "dashboard_bucket_name" {
+  description = "S3 bucket name for the Angular dashboard static files"
+  value       = module.s3.dashboard_bucket_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID — used to invalidate cache after dashboard deploy"
+  value       = module.cloudfront.distribution_id
+}

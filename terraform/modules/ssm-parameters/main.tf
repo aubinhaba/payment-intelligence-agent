@@ -4,14 +4,14 @@ locals {
 
 # Claude API key — value must be set manually after apply:
 #   aws ssm put-parameter \
-#     --name /pia/dev/CLAUDE_API_KEY \
+#     --name /pia/dev/claude/api-key \
 #     --value "sk-ant-..." \
 #     --type SecureString \
 #     --overwrite
 # The placeholder here prevents Terraform from failing on first apply.
 # ignore_changes on value so manual updates are not reverted.
 resource "aws_ssm_parameter" "claude_api_key" {
-  name        = "${local.path_prefix}/CLAUDE_API_KEY"
+  name        = "${local.path_prefix}/claude/api-key"
   description = "Anthropic Claude API key for PIA agent"
   type        = "SecureString"
   value       = "PLACEHOLDER_SET_MANUALLY"

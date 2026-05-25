@@ -22,63 +22,63 @@ resource "aws_dynamodb_table" "main" {
     type = "S"
   }
   attribute {
-    name = "GSI1PK"
+    name = "gsi1Pk"
     type = "S"
   }
   attribute {
-    name = "GSI1SK"
+    name = "gsi1Sk"
     type = "S"
   }
   attribute {
-    name = "GSI2PK"
+    name = "gsi2Pk"
     type = "S"
   }
   attribute {
-    name = "GSI2SK"
+    name = "gsi2Sk"
     type = "S"
   }
   attribute {
-    name = "GSI3PK"
+    name = "gsi3Pk"
     type = "S"
   }
   attribute {
-    name = "GSI3SK"
+    name = "gsi3Sk"
     type = "S"
   }
   attribute {
-    name = "GSI4PK"
+    name = "gsi4Pk"
     type = "S"
   }
   attribute {
-    name = "GSI4SK"
+    name = "gsi4Sk"
     type = "S"
   }
 
   global_secondary_index {
-    name            = "GSI1-card-transactions"
-    hash_key        = "GSI1PK"
-    range_key       = "GSI1SK"
+    name            = "gsi1"
+    hash_key        = "gsi1Pk"
+    range_key       = "gsi1Sk"
     projection_type = "ALL"
   }
 
   global_secondary_index {
-    name            = "GSI2-anomaly-severity"
-    hash_key        = "GSI2PK"
-    range_key       = "GSI2SK"
+    name            = "gsi2"
+    hash_key        = "gsi2Pk"
+    range_key       = "gsi2Sk"
     projection_type = "ALL"
   }
 
   global_secondary_index {
-    name            = "GSI3-reports-daily"
-    hash_key        = "GSI3PK"
-    range_key       = "GSI3SK"
+    name            = "gsi3"
+    hash_key        = "gsi3Pk"
+    range_key       = "gsi3Sk"
     projection_type = "ALL"
   }
 
   global_secondary_index {
-    name            = "GSI4-outbox-unprocessed"
-    hash_key        = "GSI4PK"
-    range_key       = "GSI4SK"
+    name            = "gsi4"
+    hash_key        = "gsi4Pk"
+    range_key       = "gsi4Sk"
     projection_type = "ALL"
   }
 

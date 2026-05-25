@@ -23,3 +23,8 @@ variable "price_class" {
   type        = string
   default     = "PriceClass_100"
 }
+
+variable "alb_dns_name" {
+  description = "ALB DNS name used as the API backend origin (HTTP)"
+  type        = string
+}

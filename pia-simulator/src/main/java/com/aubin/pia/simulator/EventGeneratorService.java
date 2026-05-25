@@ -32,19 +32,19 @@ public class EventGeneratorService {
             NormalFlowScenario normalFlow,
             FraudBurstScenario fraudBurst,
             CardTestingScenario cardTesting,
-            @Value("${pia.simulator.queue-name:payment-events-queue}") String queueName) {
+            @Value("${SQS_QUEUE_URL:}") String queueUrl) {
         this.sqsTemplate = sqsTemplate;
         this.normalFlow = normalFlow;
         this.fraudBurst = fraudBurst;
         this.cardTesting = cardTesting;
-        this.queueName = queueName;
+        this.queueName = queueUrl;
     }
 
-    @Scheduled(fixedDelayString = "${pia.simulator.interval-ms:5000}")
+    @Scheduled(fixedDelayString = "${pia.simulator.interval-ms:60000}")
     public void generateEvent() {
         PaymentEventDto event = pickScenario();
         sqsTemplate.send(queueName, event);
-        log.debug("simulator.sent scenario={} eventId={}", event.eventType(), event.eventId());
+        log.info("simulator.sent scenario={} eventId={}", event.eventType(), event.eventId());
     }
 
     private PaymentEventDto pickScenario() {

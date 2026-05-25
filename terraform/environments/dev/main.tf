@@ -129,6 +129,7 @@ module "iam" {
   s3_reports_bucket_arn = module.s3.reports_bucket_arn
   ecr_repository_arns   = module.ecr.repository_arns
   ssm_path_prefix       = "/pia/dev"
+  kms_key_arn           = module.kms.kms_key_id
 
   extra_sqs_queue_arns = [
     module.sqs_anomaly_analysis.queue_arn,
@@ -197,7 +198,7 @@ module "pia_core" {
   private_subnet_ids = module.networking.private_subnet_ids
   security_group_id  = module.networking.sg_ecs_core_id
   target_group_arn   = module.alb.core_target_group_arn
-  desired_count      = 0
+  desired_count      = var.core_desired_count
   log_group_name     = "/pia/dev/app"
   region             = var.aws_region
 
@@ -212,6 +213,7 @@ module "pia_core" {
     { name = "PIA_SQS_ANOMALY_ANALYSIS_DLQ", value = module.sqs_anomaly_analysis.dlq_name },
     { name = "S3_REPORTS_BUCKET", value = module.s3.reports_bucket_name },
     { name = "PIA_AGENT_ENABLED", value = tostring(var.agent_enabled) },
+    { name = "SSM_PATH_PREFIX", value = module.ssm.path_prefix },
   ]
 
   secrets = [
@@ -244,6 +246,7 @@ module "pia_simulator" {
     { name = "SPRING_PROFILES_ACTIVE", value = "dev" },
     { name = "AWS_REGION", value = var.aws_region },
     { name = "SQS_QUEUE_URL", value = module.sqs.queue_url },
+    { name = "PIA_SQS_PAYMENT_EVENTS_QUEUE", value = module.sqs.queue_name },
     { name = "PIA_SIMULATOR_INTERVAL_MS", value = tostring(var.simulator_interval_ms) },
   ]
 }
@@ -257,4 +260,5 @@ module "cloudfront" {
   app_name                         = "pia"
   dashboard_bucket_id              = module.s3.dashboard_bucket_id
   dashboard_bucket_regional_domain = module.s3.dashboard_bucket_regional_domain
+  alb_dns_name                     = module.alb.alb_dns_name
 }

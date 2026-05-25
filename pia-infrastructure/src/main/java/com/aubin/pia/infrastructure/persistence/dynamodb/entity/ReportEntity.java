@@ -1,5 +1,6 @@
 package com.aubin.pia.infrastructure.persistence.dynamodb.entity;
 
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
@@ -34,6 +35,7 @@ public class ReportEntity {
     public ReportEntity() {}
 
     @DynamoDbPartitionKey
+    @DynamoDbAttribute("PK")
     public String getPk() {
         return pk;
     }
@@ -43,6 +45,7 @@ public class ReportEntity {
     }
 
     @DynamoDbSortKey
+    @DynamoDbAttribute("SK")
     public String getSk() {
         return sk;
     }

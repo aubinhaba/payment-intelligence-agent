@@ -86,7 +86,9 @@ public class DynamoDbTransactionRepository implements TransactionRepository {
     public List<Transaction> findPaged(int page, int size) {
         Expression filter =
                 Expression.builder()
-                        .expression("begins_with(pk, :pkPrefix) AND sk = :sk")
+                        .expression("begins_with(#pk, :pkPrefix) AND #sk = :sk")
+                        .putExpressionName("#pk", "PK")
+                        .putExpressionName("#sk", "SK")
                         .putExpressionValue(":pkPrefix", AttributeValue.fromS(PK_PREFIX))
                         .putExpressionValue(":sk", AttributeValue.fromS(SK_METADATA))
                         .build();

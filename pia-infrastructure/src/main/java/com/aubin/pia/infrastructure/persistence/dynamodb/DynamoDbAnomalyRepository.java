@@ -70,7 +70,8 @@ public class DynamoDbAnomalyRepository implements AnomalyRepository {
     public List<Anomaly> findPaged(int page, int size) {
         Expression filter =
                 Expression.builder()
-                        .expression("begins_with(sk, :skPrefix)")
+                        .expression("begins_with(#sk, :skPrefix)")
+                        .putExpressionName("#sk", "SK")
                         .putExpressionValue(":skPrefix", AttributeValue.fromS(SK_ANOMALY_PREFIX))
                         .build();
         return table.scan(ScanEnhancedRequest.builder().filterExpression(filter).build()).stream()

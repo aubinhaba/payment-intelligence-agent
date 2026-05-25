@@ -47,7 +47,8 @@ public class DynamoDbReportRepository implements ReportRepository {
     public List<Report> findRecent(int limit) {
         Expression filter =
                 Expression.builder()
-                        .expression("begins_with(pk, :pkPrefix)")
+                        .expression("begins_with(#pk, :pkPrefix)")
+                        .putExpressionName("#pk", "PK")
                         .putExpressionValue(":pkPrefix", AttributeValue.fromS(PK_PREFIX))
                         .build();
         return table.scan(ScanEnhancedRequest.builder().filterExpression(filter).build()).stream()

@@ -46,3 +46,9 @@ variable "simulator_interval_ms" {
   default     = 60000
 }
 
+variable "core_desired_count" {
+  description = "Number of pia-core ECS tasks to run. Set to 1 during active sessions, 0 to stop and save costs."
+  type        = number
+  default     = 1
+}
+
