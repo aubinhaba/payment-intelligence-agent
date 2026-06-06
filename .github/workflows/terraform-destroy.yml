@@ -49,11 +49,6 @@ jobs:
       - name: Empty and delete S3 state bucket
         run: |
           echo "==> Deleting all object versions from $STATE_BUCKET"
-          aws s3api list-object-versions \
-            --bucket "$STATE_BUCKET" \
-            --query 'Versions[].{Key:Key,VersionId:VersionId}' \
-            --output json | \
-          jq -r '.[] | "--delete '{\"Objects\":[{\"Key\":\"\(.Key)\",\"VersionId\":\"\(.VersionId)\"}]}'" > /dev/null || true
 
           aws s3 rm "s3://$STATE_BUCKET" --recursive || true
 

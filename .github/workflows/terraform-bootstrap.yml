@@ -71,7 +71,7 @@ jobs:
         if: ${{ github.event.inputs.claude_api_key != '' }}
         run: |
           aws ssm put-parameter \
-            --name "/pia/dev/CLAUDE_API_KEY" \
+            --name "/pia/dev/api-key" \
             --value "${{ github.event.inputs.claude_api_key }}" \
             --type SecureString \
             --overwrite \
